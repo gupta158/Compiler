@@ -3,8 +3,8 @@ __author__ = 'gupta158, jalliger'
 import sys
 from antlr4 import *
 from antlr4.InputStream import InputStream
-from MicroExprLexer import MicroExprLexer
-from MicroExprParser import MicroExprParser
+from LittleExprLexer import LittleExprLexer
+from LittleExprParser import LittleExprParser
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -12,9 +12,9 @@ if __name__ == '__main__':
     else:
         input_stream = InputStream(sys.stdin.readline())
 
-    lexer = MicroExprLexer(input_stream)
+    lexer = LittleExprLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
-    parser = MicroExprParser(token_stream)
+    parser = LittleExprParser(token_stream)
     tree = parser.prog()
 
     lisp_tree_str = tree.toStringTree(recog=parser)

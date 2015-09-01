@@ -2,7 +2,7 @@
 shopt -s expand_aliases  # Enables alias expansion.
 
 VIRTUALDIRECTORY="./venv3"
-declare -a filesToClean=("MicroExpr.tokens" "MicroExprLexer.tokens" "MicroExprtokensListener.py", "MicroExprtokensParser.py")
+declare -a filesToClean=("LittleExpr.tokens" "LittleExprLexer.tokens" "LittleExprtokensListener.py", "LittleExprtokensParser.py")
 for i in "${filesToClean[@]}"
 do
 	if [ -e "$i" ]; then
@@ -29,11 +29,11 @@ alias antlr4='java -jar ./antlr-4.5.1-complete.jar'
 alias grun='java ./org.antlr.v4.gui.TestRig'
 
 echo "Running antlr to genrate parser"
-antlr4 -Dlanguage=Python3 MicroExpr.g4
+antlr4 -Dlanguage=Python3 LittleExpr.g4
 
 # RUN PYTHON FILE
 echo "Running python compiler"
-python compileMicro.py $1
+python compileLittle.py $1
 
 
 

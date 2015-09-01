@@ -1,4 +1,4 @@
-grammar MicroExpr; // rename to distinguish from Expr.g4
+grammar LittleExpr; // rename to distinguish from Expr.g4
 
 prog:   stat+ ;
 
