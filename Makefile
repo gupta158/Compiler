@@ -3,10 +3,11 @@ all: group compiler
 group:
 	echo "Manish Gupta (gupta158), James Alliger (jalliger)"
 
-compiler: helloworld
-
-helloworld: helloworld.c
-	$(CC) -o $@ $<
+compiler: 
+	@chmod +x setupScript
+	@chmod +x Micro
+	@./setupScript Install
 
 clean:
-	rm helloworld
+	@chmod +x setupScript
+	@./setupScript Clean
