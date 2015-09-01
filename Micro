@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+shopt -s expand_aliases  # Enables alias expansion.
+
+VIRTUALDIRECTORY="./venv3"
+declare -a filesToClean=("MicroExpr.tokens" "MicroExprLexer.tokens" "MicroExprtokensListener.py", "MicroExprtokensParser.py")
+for i in "${filesToClean[@]}"
+do
+	if [ -e "$i" ]; then
+		rm $i
+	fi
+done
+
+if [ ! -e "$VIRTUALDIRECTORY" ]; then
+	echo "Creating virtual environment"
+	pyvenv $VIRTUALDIRECTORY
+fi
+
+# ACTIVATE VENV
+echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""
+source $VIRTUALDIRECTORY/bin/activate
+
+echo "Installing antlr python"
+pip install antlr4-python3-runtime > /dev/null 2>&1
+
+echo "Downloading antlr jar"
+curl -O http://www.antlr.org/download/antlr-4.5.1-complete.jar > /dev/null 2>&1
+export CLASSPATH=".:/antlr-4.5.1-complete.jar:$CLASSPATH"
+alias antlr4='java -jar ./antlr-4.5.1-complete.jar'
+alias grun='java ./org.antlr.v4.gui.TestRig'
+
+echo "Running antlr to genrate parser"
+antlr4 -Dlanguage=Python3 MicroExpr.g4
+
+# RUN PYTHON FILE
+echo "Running python compiler"
+python compileMicro.py $1
+
+
+
