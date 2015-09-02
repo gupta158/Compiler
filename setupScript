@@ -31,7 +31,7 @@ then
 
 	echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""
 	source $VIRTUALDIRECTORY/bin/activate
-	
+
 	echo "Installing antlr python"
 	pip install antlr4-python3-runtime > /dev/null 2>&1
 
@@ -42,7 +42,7 @@ then
 
 	export CLASSPATH=".:/antlr-4.5.1-complete.jar:$CLASSPATH"
 	antlr4='java -jar ./antlr-4.5.1-complete.jar'
-	alias grun='java ./org.antlr.v4.gui.TestRig'
+	grun='java ./org.antlr.v4.gui.TestRig'
 
 	echo "Running antlr to genrate parser"
 	$antlr4 -Dlanguage=Python3 LittleExpr.g4
