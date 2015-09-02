@@ -2,11 +2,11 @@
 VIRTUALDIRECTORY="./venv3"
 
 # ACTIVATE VENV
-echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""
+#echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""
 source $VIRTUALDIRECTORY/bin/activate
 
 # RUN PYTHON FILE
-echo "Running python compiler"
+#echo "Running python compiler"
 python compileLittle.py $1
 
 

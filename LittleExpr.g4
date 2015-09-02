@@ -20,9 +20,9 @@ KEYWORD: PROGRAM
 	   | INT
 	   | VOID
 	   | STRING
-	   | FLOAT {print("Hello world")};	//('PROGRAM'|'BEGIN'|'END'|'FUNCTION'|'READ'|'WRITE'|'IF'|'ELSE'|'FI'|'FOR'|'ROF'|'CONTINUE'|'BREAK'|'RETURN'|'INT'|'VOID'|'STRING'|'FLOAT');
+	   | FLOAT ;
 
-INDENTIFER: [a-zA-Z][a-zA-Z0-9]* {print("Goodbye, World")};
+IDENTIFIER: [a-zA-Z][a-zA-Z0-9]* ;
 
 OPERATOR: MUL
 		| ADD
@@ -84,9 +84,7 @@ COLEQ: ':=';
 
 WS: [ \r\t\n]+ -> skip ;
 
-COMMENT: '--'~[NEWLINE]* '\r'? NEWLINE -> skip;
-
-NEWLINE: '\n';
+COMMENT: '--'~[\n]* '\r'? '\n' -> skip;
 
 
 /*
