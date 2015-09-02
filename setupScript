@@ -1,0 +1,49 @@
+cleanStr="Clean"
+setupStr="Install"
+VIRTUALDIRECTORY="./venv3"
+antlrFile="antlr-4.5.1-complete.jar"
+
+shopt -s expand_aliases  # Enables alias expansion.
+
+if [ "$1" == "$cleanStr" ];
+then
+	if [ -e "$antlrFile" ]; then
+		rm $antlrFile
+	fi
+	if [ -e "$VIRTUALDIRECTORY" ]; then
+		rm -r $VIRTUALDIRECTORY
+	fi
+
+	declare -a filesToClean=("LittleExpr.tokens" "LittleExprLexer.tokens" "LittleExprtokensListener.py", "LittleExprtokensParser.py")
+	for i in "${filesToClean[@]}"
+	do
+		if [ -e "$i" ]; then
+			rm $i
+		fi
+	done
+elif [ "$1" == "$setupStr" ];
+then
+	shopt -s expand_aliases  # Enables alias expansion.
+	if [ ! -e "$VIRTUALDIRECTORY" ]; then
+		echo "Creating virtual environment"
+		pyvenv $VIRTUALDIRECTORY
+	fi
+
+	echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""
+	source $VIRTUALDIRECTORY/bin/activate
+	
+	echo "Installing antlr python"
+	pip install antlr4-python3-runtime > /dev/null 2>&1
+
+	if [ ! -e "$antlrFile" ]; then
+		echo "Downloading antlr jar"
+		curl -O http://www.antlr.org/download/antlr-4.5.1-complete.jar > /dev/null 2>&1
+	fi
+
+	export CLASSPATH=".:/antlr-4.5.1-complete.jar:$CLASSPATH"
+	antlr4='java -jar ./antlr-4.5.1-complete.jar'
+	alias grun='java ./org.antlr.v4.gui.TestRig'
+
+	echo "Running antlr to genrate parser"
+	$antlr4 -Dlanguage=Python3 LittleExpr.g4
+fi
