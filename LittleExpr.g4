@@ -84,8 +84,9 @@ COLEQ: ':=';
 
 WS: [ \r\t\n]+ -> skip ;
 
-COMMENT: '--'~[\n]* '\r'? '\n' -> skip;
+COMMENT: '--'~[NEWLINE]* '\r'? NEWLINE -> skip;
 
+NEWLINE: '\n';
 
 /*
 	todo:

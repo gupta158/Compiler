@@ -35,8 +35,11 @@ def main(argv):
 def printTokens(lexer, token_stream):
     token_stream.getText()
     for token in token_stream.tokens:
-        print("Token Type: {}".format(lexer.symbolicNames[token.type]))
-        print("Value: {}".format(token.text))
+        if( token.type != -1):
+            
+            print("Token Type: {}".format(lexer.symbolicNames[token.type]))
+            print("Value: {}".format(token.text))
+        
 
 
 if __name__ == '__main__':
