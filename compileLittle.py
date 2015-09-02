@@ -12,24 +12,10 @@ def main(argv):
     else:
         print("ERROR!, no file provided")
         return
-        #input_stream = InputStream(sys.stdin.readline())
-
-    #print("before Lexer!")
+        
     lexer = LittleExprLexer(input_stream)
-    #print("before token stream!")
-    # for i in lexer.symbolicNames:
-    #     print(i)
     token_stream = CommonTokenStream(lexer)
-    #print("before token stream get text!")
-    # for i in token_stream.getTokens(0, 5000):
-    #     print(i)
     printTokens(lexer, token_stream)
-    #print("before parsing")
-    #parser = LittleExprParser(token_stream)    
-    #tree = parser.keyword()
-
-    #lisp_tree_str = tree.toStringTree(recog=parser)
-    #print(lisp_tree_str)
 
 
 def printTokens(lexer, token_stream):

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VIRTUALDIRECTORY="./venv3"
+VIRTUALDIRECTORY="./venv"
 
 # ACTIVATE VENV
 #echo "Excecuting \"source $VIRTUALDIRECTORY/bin/activate\""

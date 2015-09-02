@@ -87,10 +87,3 @@ WS: [ \r\t\n]+ -> skip ;
 COMMENT: '--'~[NEWLINE]* '\r'? NEWLINE -> skip;
 
 NEWLINE: '\n';
-
-/*
-	todo:
-	define operators
-	define literals
-	define keywords in detail
-	*/
