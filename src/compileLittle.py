@@ -12,7 +12,7 @@ def main(argv):
     else:
         print("ERROR!, no file provided")
         return
-        
+
     lexer = LittleExprLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
     printTokens(lexer, token_stream)
@@ -21,8 +21,7 @@ def main(argv):
 def printTokens(lexer, token_stream):
     token_stream.getText()
     for token in token_stream.tokens:
-        if( token.type != -1):
-            
+        if( token.type != -1):    
             print("Token Type: {}".format(lexer.symbolicNames[token.type]))
             print("Value: {}".format(token.text))
         

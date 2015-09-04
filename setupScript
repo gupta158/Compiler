@@ -2,27 +2,24 @@ cleanStr="Clean"
 setupStr="Install"
 VIRTUALDIRECTORY="./venv"
 PYCACHE="./__pycache__"
-antlrFile="antlr-4.5.1-complete.jar"
+antlrFile="lib/antlr.jar"
 
 shopt -s expand_aliases  # Enables alias expansion.
 
 if [ "$1" == "$cleanStr" ];
 then
-	if [ -e "$antlrFile" ]; then
-		rm $antlrFile
-	fi
 	if [ -e "$VIRTUALDIRECTORY" ]; then
 		rm -r $VIRTUALDIRECTORY
 	fi
-	if [ -e "$PYCACHE" ]; then
-		rm -r $PYCACHE
+	if [ -e "src/$PYCACHE" ]; then
+		rm -r src/$PYCACHE
 	fi
 
 	declare -a filesToClean=("LittleExpr.tokens" "LittleExprLexer.tokens" "LittleExprListener.py" "LittleExprLexer.py" "LittleExprParser.py")
 	for i in "${filesToClean[@]}"
 	do
-		if [ -e "$i" ]; then
-			rm $i
+		if [ -e "src/$i" ]; then
+			rm src/$i
 		fi
 	done
 elif [ "$1" == "$setupStr" ];
@@ -41,13 +38,19 @@ then
 
 	if [ ! -e "$antlrFile" ]; then
 		# echo "Downloading antlr jar"
+		if [ ! -e "lib" ]; then
+			mkdir lib
+		fi
+		cd lib
 		curl -O http://www.antlr.org/download/antlr-4.5.1-complete.jar > /dev/null 2>&1
+		mv antlr-4.5.1-complete.jar antlr.jar
+		cd ..
 	fi
 
-	export CLASSPATH=".:/antlr-4.5.1-complete.jar:$CLASSPATH"
-	antlr4='java -jar ./antlr-4.5.1-complete.jar'
+	export CLASSPATH=".:/lib/antlr.jar:$CLASSPATH"
+	antlr4='java -jar ./lib/antlr.jar'
 	grun='java ./org.antlr.v4.gui.TestRig'
 
 	# echo "Running antlr to genrate parser"
-	$antlr4 -Dlanguage=Python3 LittleExpr.g4
+	$antlr4 -o ./src/ -Dlanguage=Python3 LittleExpr.g4
 fi
