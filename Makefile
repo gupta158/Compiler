@@ -1,13 +1,13 @@
 all: group compiler
 
 group:
-	echo "Manish Gupta (gupta158), James Alliger (jalliger)"
+	@echo "Manish Gupta (gupta158), James Alliger (jalliger)"
 
 compiler: 
-	@chmod +x setupScript
+	@chmod +x src/setupScript
 	@chmod +x Micro
-	@./setupScript Install
+	@./src/setupScript Install
 
 clean:
-	@chmod +x setupScript
-	@./setupScript Clean
+	@chmod +x src/setupScript
+	@./src/setupScript Clean

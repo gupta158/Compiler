@@ -1,8 +1,8 @@
 cleanStr="Clean"
 setupStr="Install"
-VIRTUALDIRECTORY="./venv"
+VIRTUALDIRECTORY="../venv"
 PYCACHE="./__pycache__"
-antlrFile="lib/antlr.jar"
+antlrFile="../lib/antlr.jar"
 
 shopt -s expand_aliases  # Enables alias expansion.
 
@@ -11,14 +11,14 @@ then
 	if [ -e "$VIRTUALDIRECTORY" ]; then
 		rm -r $VIRTUALDIRECTORY
 	fi
-	if [ -e "src/$PYCACHE" ]; then
+	if [ -e "$PYCACHE" ]; then
 		rm -r src/$PYCACHE
 	fi
 
 	declare -a filesToClean=("LittleExpr.tokens" "LittleExprLexer.tokens" "LittleExprListener.py" "LittleExprLexer.py" "LittleExprParser.py")
 	for i in "${filesToClean[@]}"
 	do
-		if [ -e "src/$i" ]; then
+		if [ -e "$i" ]; then
 			rm src/$i
 		fi
 	done
@@ -47,10 +47,11 @@ then
 		cd ..
 	fi
 
-	export CLASSPATH=".:/lib/antlr.jar:$CLASSPATH"
-	antlr4='java -jar ./lib/antlr.jar'
+	export CLASSPATH=".:/../lib/antlr.jar:$CLASSPATH"
+	antlr4='java -jar ./../lib/antlr.jar'
 	grun='java ./org.antlr.v4.gui.TestRig'
 
 	# echo "Running antlr to genrate parser"
-	$antlr4 -o ./src/ -Dlanguage=Python3 LittleExpr.g4
+	$antlr4 -o ../src/ -Dlanguage=Python3 ../LittleExpr.g4
+
 fi

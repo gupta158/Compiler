@@ -17,6 +17,16 @@ def main(argv):
     token_stream = CommonTokenStream(lexer)
     printTokens(lexer, token_stream)
 
+    print("before parsing")
+    parser = LittleExprParser(token_stream)    
+    tree = parser.program()
+
+    lisp_tree_str = tree.toStringTree(recog=parser)
+    print(lisp_tree_str)
+
+    # for child in tree.getChildren():
+    #     print(child.getText())
+    #     print("HGEY")
 
 def printTokens(lexer, token_stream):
     token_stream.getText()
