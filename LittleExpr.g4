@@ -2,6 +2,25 @@ grammar LittleExpr;
 
 keyword : KEYWORD;
 
+//Basic statment
+assign_stmt: assign_exp SEMICOLON;
+assign_expr: IDENTIFIER COLEQ expr;
+read_stmt: READ OPENPAR id_list CLOSEPAR;
+write_stmt: WRITE OPENPAR id_list CLOSEPAR;
+return_stmt: RETURN expr;
+
+//EXPRESIONS
+expr: expr_prefix factor
+expr_prefix       -> expr_prefix factor addop | empty
+factor            -> factor_prefix postfix_expr
+factor_prefix     -> factor_prefix postfix_expr mulop | empty
+postfix_expr      -> primary | call_expr
+call_expr         -> id ( expr_list )
+expr_list         -> expr expr_list_tail | empty
+expr_list_tail    -> , expr expr_list_tail | empty
+primary           -> ( expr ) | id | INTLITERAL | FLOATLITERAL
+addop             -> + | -
+mulop             -> * | /
 
 KEYWORD: PROGRAM
 	   | BEGIN
