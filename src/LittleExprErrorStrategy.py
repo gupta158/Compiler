@@ -16,13 +16,14 @@ class LittleExprErrorStrategy ( DefaultErrorStrategy ):
     # if we've already reported an error and have not matched a token
     # yet successfully, don't report any errors.
     self.errorCount = self.errorCount + 1
+    raise SyntaxError("syntax error")
 
   def recoverInline(self, recognizer:Parser):
     # if we've already reported an error and have not matched a token
     # yet successfully, don't report any errors.
-    stderr = sys.stderr
-    sys.stderr = open(os.devnull, 'w')
+   
 
     super().recoverInline(recognizer)
-    sys.stderr = stderr
+    
+    # this error count is not the same as the report error count
     self.errorCount = self.errorCount + 1
