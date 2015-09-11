@@ -1,7 +1,6 @@
 __author__ = 'gupta158, jalliger'
 
 import sys
-import os
 from antlr4 import *
 from antlr4.InputStream import InputStream
 from LittleExprLexer import LittleExprLexer
@@ -24,16 +23,14 @@ def main(argv):
     errorHandler = LittleExprErrorStrategy()
     parser._errHandler = errorHandler
     
-    stderr = sys.stderr
-    sys.stderr = open(os.devnull, 'w')
+    
     try:
         tree = parser.program()
         print("Accepted")
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
         print("Not accepted")
-    sys.stderr = stderr
-    #if(errorHandler.errorCount > 0):
+    
      #   print("Not accepted")
     #else:
     #    print("Accepted")
