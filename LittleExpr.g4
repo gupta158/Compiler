@@ -7,11 +7,11 @@ pgm_body: decl func_declarations;
 decl: string_decl decl | var_decl decl | ;
 
 /* Global String Declaration */
-string_decl: STRING identifier COLEQ stringliteral ;
+string_decl: STRING identifier COLEQ stringliteral SEMICOLON ;
 stringliteral: STRINGLITERAL;
 
 /* Variable Declaration */
-var_decl: var_type id_list ;
+var_decl: var_type id_list SEMICOLON;
 var_type: FLOAT | INT ;
 any_type: var_type | VOID ;
 id_list: identifier id_tail ;
@@ -25,7 +25,7 @@ param_decl_tail: COMMA param_decl param_decl_tail | ;
 
 /* Function Declarations */
 func_declarations: func_decl func_declarations | ;
-func_decl: FUNCTION any_type identifier (param_decl_list) BEGIN func_body END;
+func_decl: FUNCTION any_type identifier OPENPAR param_decl_list CLOSEPAR BEGIN func_body END;
 func_body: decl stmt_list;
 
 
@@ -37,9 +37,9 @@ base_stmt: assign_stmt | read_stmt | write_stmt | return_stmt ;
 //Basic statment
 assign_stmt: assign_expr SEMICOLON;
 assign_expr: identifier COLEQ expr;
-read_stmt: READ OPENPAR id_list CLOSEPAR;
-write_stmt: WRITE OPENPAR id_list CLOSEPAR;
-return_stmt: RETURN expr;
+read_stmt: READ OPENPAR id_list CLOSEPAR SEMICOLON;
+write_stmt: WRITE OPENPAR id_list CLOSEPAR SEMICOLON;
+return_stmt: RETURN expr SEMICOLON;
 
 //EXPRESIONS
 expr: expr_prefix factor;

@@ -5,6 +5,7 @@ from antlr4 import *
 from antlr4.InputStream import InputStream
 from LittleExprLexer import LittleExprLexer
 from LittleExprParser import LittleExprParser
+from LittleExprErrorStrategy import LittleExprErrorStrategy
 
 def main(argv):
     if len(argv) > 1:
@@ -15,14 +16,21 @@ def main(argv):
 
     lexer = LittleExprLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
-    printTokens(lexer, token_stream)
+    # printTokens(lexer, token_stream)
 
-    print("before parsing")
-    parser = LittleExprParser(token_stream)    
+    parser = LittleExprParser(token_stream)  
+    errorHandler = LittleExprErrorStrategy()
+    parser._errHandler = errorHandler
+
     tree = parser.program()
+    if(errorHandler.errorCount > 0):
+        print("Not accepted")
+    else:
+        print("Accepted")
+
 
     lisp_tree_str = tree.toStringTree(recog=parser)
-    print(lisp_tree_str)
+    # print(lisp_tree_str)
 
     # for child in tree.getChildren():
     #     print(child.getText())
