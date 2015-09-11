@@ -147,6 +147,6 @@ COLEQ: ':=';
 
 WS: [ \r\t\n]+ -> skip ;
 
-COMMENT: '--'~[NEWLINE]* '\r'? NEWLINE -> skip;
+COMMENT: '--' ~[NEWLINE]* '\r'? NEWLINE -> skip ;
 
 NEWLINE: '\n';

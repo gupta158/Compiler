@@ -6,7 +6,7 @@ if [ ! -e "$outputDir" ]; then
 	mkdir "$outputDir"
 fi
 
-for i in `seq 1 22`
+for i in `seq 1 21`
 do
 	if [ -e "$inputDir/test$i.micro" ]; then
 		./Micro "$inputDir/test$i.micro" > "$outputDir/test$i.out"  2>&1
