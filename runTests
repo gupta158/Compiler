@@ -11,6 +11,6 @@ do
 	if [ -e "$inputDir/test$i.micro" ]; then
 		./Micro "$inputDir/test$i.micro" > "$outputDir/test$i.out"  2>&1
 		echo $i
-		diff -b "$outputDir/test$i.out" "$correctOutputDir/test$i.out"
+		diff "$outputDir/test$i.out" "$correctOutputDir/test$i.out"
 	fi
 done

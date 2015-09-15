@@ -26,10 +26,10 @@ def main(argv):
     
     try:
         tree = parser.program()
-        print("Accepted")
+        print("Accepted\r")
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
-        print("Not accepted")
+        print("Not accepted\r")
     
      #   print("Not accepted")
     #else:
