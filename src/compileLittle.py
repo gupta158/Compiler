@@ -30,18 +30,8 @@ def main(argv):
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
         print("Not accepted\r")
-    
-     #   print("Not accepted")
-    #else:
-    #    print("Accepted")
-
-
-   
+       
     #print(lisp_tree_str)
-
-    # for child in tree.getChildren():
-    #     print(child.getText())
-    #     print("HGEY")
 
 def printTokens(lexer, token_stream):
     token_stream.getText()
