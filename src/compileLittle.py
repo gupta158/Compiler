@@ -28,12 +28,13 @@ def main(argv):
     
     try:
         tree = parser.program()
-        print("Accepted\r")
+        #print("Accepted\r")
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
         print("Not accepted\r")
         return
 
+    #print(lisp_tree_str)
     # symtab = symbolTable(tree, parser)
     # symtab.generateTable()
     printer = SymbolTableGenerator()
