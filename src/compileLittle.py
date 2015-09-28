@@ -6,6 +6,8 @@ from antlr4.InputStream import InputStream
 from LittleExprLexer import LittleExprLexer
 from LittleExprParser import LittleExprParser
 from LittleExprErrorStrategy import LittleExprErrorStrategy
+from symbolTable import *
+from SymbolTableGenerator import SymbolTableGenerator
 
 
 def main(argv):
@@ -30,8 +32,13 @@ def main(argv):
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
         print("Not accepted\r")
-       
-    #print(lisp_tree_str)
+        return
+
+    # symtab = symbolTable(tree, parser)
+    # symtab.generateTable()
+    printer = SymbolTableGenerator()
+    walker = ParseTreeWalker()
+    walker.walk(printer, tree)
 
 def printTokens(lexer, token_stream):
     token_stream.getText()
