@@ -20,6 +20,7 @@ class SymbolTableGenerator(LittleExprListener):
 	# Exit a parse tree produced by LittleExprParser#program.
     def exitProgram(self, ctx:LittleExprParser.ProgramContext):
         print("\n".join(self.printSymbolTable))
+        self.symbolTable.pop()
         pass
 
 	# Enter a parse tree produced by LittleExprParser#func_decl.
@@ -30,16 +31,19 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#func_decl.
     def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
-       pass
+        self.symbolTable.pop()
+        pass
 
 	# Enter a parse tree produced by LittleExprParser#if_stmt.
     def enterIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
         self.printSymbolTable.append("\nSymbol table BLOCK {0}\r".format(self.block))
+        self.symbolTable.append({})
         self.block += 1
         pass
 
 	# Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
+        self.symbolTable.pop()
         pass
 
 	# Enter a parse tree produced by LittleExprParser#else_part.
@@ -51,6 +55,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#else_part.
     def exitElse_part(self, ctx:LittleExprParser.Else_partContext):
+        self.symbolTable.pop()
         pass
 
 
@@ -63,6 +68,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#for_stmt.
     def exitFor_stmt(self, ctx:LittleExprParser.For_stmtContext):
+        self.symbolTable.pop()
         pass
 
     # Enter a parse tree produced by LittleExprParser#param_decl_list.

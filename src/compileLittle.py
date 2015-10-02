@@ -6,7 +6,6 @@ from antlr4.InputStream import InputStream
 from LittleExprLexer import LittleExprLexer
 from LittleExprParser import LittleExprParser
 from LittleExprErrorStrategy import LittleExprErrorStrategy
-from symbolTable import *
 from SymbolTableGenerator import SymbolTableGenerator
 
 
