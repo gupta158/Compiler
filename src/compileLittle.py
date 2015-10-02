@@ -19,7 +19,6 @@ def main(argv):
 
     lexer = LittleExprLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
-    #printTokens(lexer, token_stream)
 
     parser = LittleExprParser(token_stream)  
     errorHandler = LittleExprErrorStrategy()
@@ -28,18 +27,18 @@ def main(argv):
     
     try:
         tree = parser.program()
-        #print("Accepted\r")
         lisp_tree_str = tree.toStringTree(recog=parser)
     except:
         print("Not accepted\r")
         return
 
-    #print(lisp_tree_str)
-    # symtab = symbolTable(tree, parser)
-    # symtab.generateTable()
-    printer = SymbolTableGenerator()
-    walker = ParseTreeWalker()
-    walker.walk(printer, tree)
+    try:
+        printer = SymbolTableGenerator()
+        walker = ParseTreeWalker()
+        walker.walk(printer, tree)
+    except SyntaxError as e:
+        print("DECLARATION ERROR {0}\r".format(e))
+        return
 
 def printTokens(lexer, token_stream):
     token_stream.getText()
