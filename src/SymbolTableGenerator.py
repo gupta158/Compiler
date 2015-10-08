@@ -20,6 +20,7 @@ class SymbolTableGenerator(LittleExprListener):
 	# Exit a parse tree produced by LittleExprParser#program.
     def exitProgram(self, ctx:LittleExprParser.ProgramContext):
         print("\n".join(self.printSymbolTable))
+        #self.printSymbolTableStack()
         self.symbolTable.pop()
         pass
 
@@ -31,6 +32,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#func_decl.
     def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
+        #self.printSymbolTableStack()
         self.symbolTable.pop()
         pass
 
@@ -43,11 +45,21 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
-        self.symbolTable.pop()
+        self.printSymbolTableStack()
+
+        # If else does not exist
+        #print(ctx.getChild(6).getText())
+        if not ctx.getChild(6).getText():
+            #print("POPPINGNO")
+            self.symbolTable.pop()
         pass
+        self.printSymbolTableStack()
 
 	# Enter a parse tree produced by LittleExprParser#else_part.
     def enterElse_part(self, ctx:LittleExprParser.Else_partContext):
+        self.printSymbolTableStack()
+        self.symbolTable.pop()  # Pop if block
+        #print("POPPING")
         self.printSymbolTable.append("\nSymbol table BLOCK {0}\r".format(self.block))
         self.symbolTable.append({})
         self.block += 1
@@ -55,6 +67,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#else_part.
     def exitElse_part(self, ctx:LittleExprParser.Else_partContext):
+        #self.printSymbolTableStack()
         self.symbolTable.pop()
         pass
 
@@ -68,6 +81,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#for_stmt.
     def exitFor_stmt(self, ctx:LittleExprParser.For_stmtContext):
+        #self.printSymbolTableStack()
         self.symbolTable.pop()
         pass
 
@@ -115,9 +129,9 @@ class SymbolTableGenerator(LittleExprListener):
         #id_list: identifier id_tail ;
         #id_tail: COMMA identifier id_tail | ;
 
-        identifier = ctx.getChild(1)
+        identifier = ctx.getChild(1).getChild(0).getText()
         self.addSymbolToTable(identifier, varType)
-        self.printSymbolTable.append("name {0} type {1}\r".format(identifier.getChild(0).getText(),varType))
+        self.printSymbolTable.append("name {0} type {1}\r".format(identifier,varType))
 
         # idTailTree = idListTree.getChild(1)        
         # while(idTailTree.getChildCount() != 0):
@@ -129,13 +143,15 @@ class SymbolTableGenerator(LittleExprListener):
     def exitParam_decl(self, ctx:LittleExprParser.Param_decl_listContext):
         pass
 
-    # # Checks if identifier exists in table
-    # def checkTable(self, identifier):
-    #     if(identifier in self.symbolTable[-1]):
-    #         raise SyntaxError(identifier) 
-
     # Add variable to identifier
     def addSymbolToTable(self, identifier, varType, value=None):
         if(identifier in self.symbolTable[-1]):
             raise SyntaxError(identifier) 
         self.symbolTable[-1][identifier] = (varType, value)
+
+    # Print symbol table stack
+    def printSymbolTableStack(self):
+        elementsOnStack = len(self.symbolTable)
+        #for i in range(1, elementsOnStack+1):
+        #    print("Stack Element {0}".format(-1*i))
+        #    print(self.symbolTable[-1 * i])
