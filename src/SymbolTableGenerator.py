@@ -1,6 +1,7 @@
 from antlr4 import *
 from LittleExprParser import LittleExprParser
 from LittleExprListener import LittleExprListener
+from AST import *
 
 # This class defines a complete listener for a parse tree produced by LittleExprParser.
 class SymbolTableGenerator(LittleExprListener):
@@ -10,6 +11,7 @@ class SymbolTableGenerator(LittleExprListener):
         self.block = 1
         self.symbolTable = []
         self.printSymbolTable = []
+        self.ASTStack  = []
 
 	# Enter a parse tree produced by LittleExprParser#program.
     def enterProgram(self, ctx:LittleExprParser.ProgramContext):
@@ -19,7 +21,7 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#program.
     def exitProgram(self, ctx:LittleExprParser.ProgramContext):
-        print("\n".join(self.printSymbolTable))
+        #print("\n".join(self.printSymbolTable))
         self.symbolTable.pop()
         pass
 
@@ -44,7 +46,7 @@ class SymbolTableGenerator(LittleExprListener):
 	# Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
         # If else does not exist
-        if not ctx.getChild(6).getText():
+        if ctx.else_part() is not None:
             self.symbolTable.pop()
         pass
 
@@ -106,6 +108,178 @@ class SymbolTableGenerator(LittleExprListener):
         self.addSymbolToTable(identifier, varType)
         self.printSymbolTable.append("name {0} type {1}\r".format(identifier,varType))
 
+
+    ###########################################################################################################
+    # AST/Code Generation
+    #
+    ###########################################################################################################
+    
+    # Enter a parse tree produced by LittleExprParser#stmt_list.
+    def enterStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
+        pass
+
+
+    # Enter a parse tree produced by LittleExprParser#expr.
+    def enterExpr(self, ctx:LittleExprParser.ExprContext):
+        pass
+
+    # Exit a parse tree produced by LittleExprParser#expr.
+    def exitExpr(self, ctx:LittleExprParser.ExprContext):
+        factorNode = self.ASTStack.pop()    
+        if ctx.expr_prefix() is not None and ctx.expr_prefix().getText():
+            exprPrefix = self.ASTStack.pop() 
+            exprPrefix.Right = factorNode
+            self.ASTStack.append(exprPrefix)
+        else:
+            self.ASTStack.append(factorNode)
+
+        print(self.ASTStack[-1].printPostOrder())
+        print(len(self.ASTStack))
+        return
+
+
+    # Enter a parse tree produced by LittleExprParser#expr_prefix.
+    def enterExpr_prefix(self, ctx:LittleExprParser.Expr_prefixContext):
+        pass
+
+    # Exit a parse tree produced by LittleExprParser#expr_prefix.
+    def exitExpr_prefix(self, ctx:LittleExprParser.Expr_prefixContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+        addopNode   = self.ASTStack.pop()       
+        factorNode  = self.ASTStack.pop()       
+        if ctx.expr_prefix() is not None and ctx.expr_prefix().getText():
+            exprPrefix = self.ASTStack.pop() 
+            exprPrefix.Right = factorNode
+            addopNode.Left = exprPrefix
+        else:
+            addopNode.Left = factorNode
+
+        self.ASTStack.append(addopNode)
+        return
+
+    # Enter a parse tree produced by LittleExprParser#factor.
+    def enterFactor(self, ctx:LittleExprParser.FactorContext):
+        pass
+        #self.ASTStack.append(self.CreateEmptyNode(identifierNode))
+
+    # Exit a parse tree produced by LittleExprParser#factor.
+    def exitFactor(self, ctx:LittleExprParser.FactorContext):   
+        postFixExpr = self.ASTStack.pop()    
+        if ctx.factor_prefix() is not None and ctx.factor_prefix().getText():
+            factorPrefix = self.ASTStack.pop() 
+            factorPrefix.Right = postFixExpr
+            self.ASTStack.append(factorPrefix)
+        else:
+            self.ASTStack.append(postFixExpr)
+        return
+
+
+    # Enter a parse tree produced by LittleExprParser#factor_prefix.
+    def enterFactor_prefix(self, ctx:LittleExprParser.Factor_prefixContext):
+        #self.ASTStack.append(self.CreateEmptyNode(identifierNode))
+        pass
+
+    # Exit a parse tree produced by LittleExprParser#factor_prefix.
+    def exitFactor_prefix(self, ctx:LittleExprParser.Factor_prefixContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+        mulopNode   = self.ASTStack.pop()       
+        postFixExpr = self.ASTStack.pop()       
+        if ctx.factor_prefix() is not None and ctx.factor_prefix().getText():
+            factorPrefix = self.ASTStack.pop() 
+            factorPrefix.Right = postFixExpr
+            mulopNode.Left = factorPrefix
+        else:
+            mulopNode.Left = postFixExpr
+
+        self.ASTStack.append(mulopNode)
+        return
+
+    # # Enter a parse tree produced by LittleExprParser#postfix_expr.
+    # def enterPostfix_expr(self, ctx:LittleExprParser.Postfix_exprContext):
+    #     self.ASTStack.append(self.CreateEmptyNode(identifierNode))
+
+    # # Enter a parse tree produced by LittleExprParser#postfix_expr.
+    # def exitPostfix_expr(self, ctx:LittleExprParser.Postfix_exprContext):
+
+
+    # Enter a parse tree produced by LittleExprParser#primary.
+    def exitPrimary(self, ctx:LittleExprParser.PrimaryContext):
+        if ctx.identifier() is not None:
+            identifierNode = ctx.identifier()
+            self.ASTStack.append(self.CreateIdentifierNode(identifierNode))
+        elif ctx.INTLITERAL() is not None:
+            INTLITERAL = ctx.INTLITERAL()
+            self.ASTStack.append(self.CreateINTLITERALNode(INTLITERAL))
+        elif ctx.FLOATLITERAL() is not None:
+            FLOATLITERAL = ctx.FLOATLITERAL()
+            self.ASTStack.append(self.CreateINTLITERALNode(FLOATLITERAL))
+        # Else case handled by default
+        #return self.CreatePrimaryNode(ctx)
+        pass
+
+    # Exit a parse tree produced by LittleExprParser#mulop.
+    def exitMulop(self, ctx:LittleExprParser.MulopContext):
+        if ctx.MUL() is not None:
+            self.ASTStack.append(ASTMath(opcode=MATHOP.MUL, LRType=LRTYPE.RTYPE))
+        else:
+            self.ASTStack.append(ASTMath(opcode=MATHOP.DIV, LRType=LRTYPE.RTYPE))
+
+
+    # Enter a parse tree produced by LittleExprParser#addop.
+    def enterAddop(self, ctx:LittleExprParser.AddopContext):
+        pass
+
+
+    # Exit a parse tree produced by LittleExprParser#addop.
+    def exitAddop(self, ctx:LittleExprParser.AddopContext):
+        if ctx.ADD() is not None:
+            self.ASTStack.append(ASTMath(opcode=MATHOP.ADD, LRType=LRTYPE.RTYPE))
+        else:
+            self.ASTStack.append(ASTMath(opcode=MATHOP.SUB, LRType=LRTYPE.RTYPE))
+
+
+    ###########################################################################################    
+    # Helper Functions
+    #
+    ###########################################################################################
+
+    # Create Empty Node
+    def CreateEmptyNode(self, ctx:LittleExprParser.IdentifierContext):
+        astNode = AST()
+        return astNode        
+
+    # Create Primary Node
+    def CreatePrimaryNode(self, ctx:LittleExprParser.PrimaryContext):
+        if ctx.identifier() is not None:
+            identifierNode = ctx.identifier()
+            return self.CreateIdentifierNode(identifierNode)
+        elif ctx.INTLITERAL() is not None:
+            INTLITERAL = ctx.INTLITERAL()
+            return self.CreateINTLITERALNode(INTLITERAL)
+        elif ctx.FLOATLITERAL() is not None:
+            FLOATLITERAL = ctx.FLOATLITERAL()
+            return self.CreateINTLITERALNode(FLOATLITERAL)
+        #else:
+
+        pass
+
+    # Create Identifier Node
+    def CreateIdentifierNode(self, ctx:LittleExprParser.IdentifierContext):
+        astNode = AST(ctx.getChild(0).getText(), LRType=LRTYPE.LTYPE, nodeType=NODETYPE.INTLITERAL)
+        return astNode
+
+    # Create INTLITERAL Node
+    def CreateINTLITERALNode(self, token):
+        astNode = AST(token.getText(), LRType=LRTYPE.RTYPE, nodeType=NODETYPE.INTLITERAL)
+        return astNode
+
+    # Create FLOATLITERAL Node
+    def CreateFLOATLITERALNode(self, token):
+        astNode = AST(token.getText(), LRType=LRTYPE.RTYPE, nodeType=NODETYPE.FLOATLITERAL)
+        return astNode
+        
     # Add variable to identifier
     def addSymbolToTable(self, identifier, varType, value=None):
         if(identifier in self.symbolTable[-1]):
