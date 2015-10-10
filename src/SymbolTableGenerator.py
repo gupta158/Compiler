@@ -113,13 +113,44 @@ class SymbolTableGenerator(LittleExprListener):
     # AST/Code Generation
     #
     ###########################################################################################################
-    # Enter a parse tree produced by LittleExprParser#assign_stmt.
-    def exitAssign_stmt(self, ctx:LittleExprParser.Stmt_listContext):
+    # Exit a parse tree produced by LittleExprParser#func_body.
+    def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
+        print(self.ASTStack[-1].generateCode())
+        pass
+
+    # Enter a parse tree produced by LittleExprParser#stmt_list.
+    def exitStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+
+        stmtListNode = ASTStmt()
+        stmtNode = self.ASTStack.pop()
+        stmtListNode.Right = stmtNode
+        stmtListNode.Left = None
+
+        if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+            stmtListNode.Left = self.ASTStack.pop()
+
+        self.ASTStack.append(stmtListNode)
+        return
+
+
+    # Exit a parse tree produced by LittleExprParser#write_stmt.
+    def exitWrite_stmt(self, ctx:LittleExprParser.Write_stmtContext):
         pass
 
 
-    # Enter a parse tree produced by LittleExprParser#stmt_list.
-    def enterStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
+    # Enter a parse tree produced by LittleExprParser#assign_stmt.
+    def exitAssign_stmt(self, ctx:LittleExprParser.Assign_stmtContext):
+        identifierNode = ctx.getChild(0)
+        exprNode = self.ASTStack.pop()
+
+        assignNode = ASTAssign()
+        assignNode.Left = self.CreateIdentifierNode(identifierNode)
+        assignNode.Right = exprNode
+        self.ASTStack.append(assignNode)
+        #self.printNewestAST()
+        #print(self.ASTStack[-1].generateCode())
         pass
 
     # Exit a parse tree produced by LittleExprParser#expr.
@@ -132,13 +163,7 @@ class SymbolTableGenerator(LittleExprListener):
         else:
             self.ASTStack.append(factorNode)
 
-        self.printNewestAST()
         return
-
-
-    # Enter a parse tree produced by LittleExprParser#expr_prefix.
-    def enterExpr_prefix(self, ctx:LittleExprParser.Expr_prefixContext):
-        pass
 
     # Exit a parse tree produced by LittleExprParser#expr_prefix.
     def exitExpr_prefix(self, ctx:LittleExprParser.Expr_prefixContext):
@@ -156,11 +181,6 @@ class SymbolTableGenerator(LittleExprListener):
         self.ASTStack.append(addopNode)
         return
 
-    # Enter a parse tree produced by LittleExprParser#factor.
-    def enterFactor(self, ctx:LittleExprParser.FactorContext):
-        pass
-        #self.ASTStack.append(self.CreateEmptyNode(identifierNode))
-
     # Exit a parse tree produced by LittleExprParser#factor.
     def exitFactor(self, ctx:LittleExprParser.FactorContext):   
         postFixExpr = self.ASTStack.pop()    
@@ -171,12 +191,6 @@ class SymbolTableGenerator(LittleExprListener):
         else:
             self.ASTStack.append(postFixExpr)
         return
-
-
-    # Enter a parse tree produced by LittleExprParser#factor_prefix.
-    def enterFactor_prefix(self, ctx:LittleExprParser.Factor_prefixContext):
-        #self.ASTStack.append(self.CreateEmptyNode(identifierNode))
-        pass
 
     # Exit a parse tree produced by LittleExprParser#factor_prefix.
     def exitFactor_prefix(self, ctx:LittleExprParser.Factor_prefixContext):
@@ -193,14 +207,6 @@ class SymbolTableGenerator(LittleExprListener):
 
         self.ASTStack.append(mulopNode)
         return
-
-    # # Enter a parse tree produced by LittleExprParser#postfix_expr.
-    # def enterPostfix_expr(self, ctx:LittleExprParser.Postfix_exprContext):
-    #     self.ASTStack.append(self.CreateEmptyNode(identifierNode))
-
-    # # Enter a parse tree produced by LittleExprParser#postfix_expr.
-    # def exitPostfix_expr(self, ctx:LittleExprParser.Postfix_exprContext):
-
 
     # Enter a parse tree produced by LittleExprParser#primary.
     def exitPrimary(self, ctx:LittleExprParser.PrimaryContext):
@@ -222,12 +228,6 @@ class SymbolTableGenerator(LittleExprListener):
             self.ASTStack.append(ASTMath(opcode=MATHOP.MUL, LRType=LRTYPE.RTYPE))
         else:
             self.ASTStack.append(ASTMath(opcode=MATHOP.DIV, LRType=LRTYPE.RTYPE))
-
-
-    # Enter a parse tree produced by LittleExprParser#addop.
-    def enterAddop(self, ctx:LittleExprParser.AddopContext):
-        pass
-
 
     # Exit a parse tree produced by LittleExprParser#addop.
     def exitAddop(self, ctx:LittleExprParser.AddopContext):
@@ -252,7 +252,13 @@ class SymbolTableGenerator(LittleExprListener):
     def CreateIdentifierNode(self, ctx:LittleExprParser.IdentifierContext):
         identifier = ctx.getChild(0).getText()
         identifierSymbol = self.GetSymbolFromSymbolTable(identifier)
-        astNode = AST(identifier, LRType=LRTYPE.LTYPE, nodeType=identifierSymbol[0])
+        identifierType = ""
+        if identifierSymbol[0] == "INT":
+            identifierType = NODETYPE.INTLITERAL
+        elif identifierSymbol[0] == "FLOAT":
+            identifierType = NODETYPE.FLOATLITERAL
+
+        astNode = AST(value=identifier, LRType=LRTYPE.LTYPE, nodeType=identifierType, tempReg=identifier)
         return astNode
 
     # Create INTLITERAL Node
@@ -289,7 +295,7 @@ class SymbolTableGenerator(LittleExprListener):
     # Print newest AST
     def printNewestAST(self):
         print("<Expr>")
-        self.ASTStack[-1].printInOrder()
+        self.ASTStack[-1].printPostOrder()
         print("</Expr>")
 
 class ElementOutOfScopeError(Exception):
