@@ -194,6 +194,40 @@ class ASTStmt(AST):
 			self.code = self.code + rCode
 		return self.code
 
+
+class ASTWrite(AST):
+	def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+		super().__init__(value="Write", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+	def printNodeInfo(self):
+		print("WRITE, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+
+	def generateSelfCode(self, lCode, rCode):
+		if(self.Left.nodeType == NODETYPE.INTLITERAL):
+			self.code = "WRITEI {0} \n".format(self.Left.tempReg)
+		elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
+			self.code = "WRITEF {0} \n".format(self.Left.tempReg)
+		if self.Right is not None:
+			self.code = self.code + rCode
+		return self.code
+
+
+class ASTRead(AST):
+	def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+		super().__init__(value="Read", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+	def printNodeInfo(self):
+		print("READ, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+
+	def generateSelfCode(self, lCode, rCode):
+		if(self.Left.nodeType == NODETYPE.INTLITERAL):
+			self.code = "READI {0} \n".format(self.Left.tempReg)
+		elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
+			self.code = "READF {0} \n".format(self.Left.tempReg)
+		if self.Right is not None:
+			self.code = self.code + rCode
+		return self.code
+
 class MATHOP(Enum):
 	ADD 	= 1
 	SUB		= 2

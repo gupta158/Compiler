@@ -137,8 +137,43 @@ class SymbolTableGenerator(LittleExprListener):
 
     # Exit a parse tree produced by LittleExprParser#write_stmt.
     def exitWrite_stmt(self, ctx:LittleExprParser.Write_stmtContext):
-        pass
+        idListTree = ctx.id_list()
+        identifier = idListTree.identifier()
+        writeNode = ASTWrite()
+        writeNode.Left = self.CreateIdentifierNode(identifier)
 
+        writeNode2 = writeNode
+        idTailTree = idListTree.id_tail()     
+        while(idTailTree.getChildCount() != 0):
+            identifier = idTailTree.identifier()
+            writeNode.Right = ASTWrite()
+            writeNode = writeNode.Right
+            writeNode.Left = self.CreateIdentifierNode(identifier)
+            idTailTree = idTailTree.id_tail() 
+
+        writeNode.Right = None
+        self.ASTStack.append(writeNode2)
+        return
+
+    # Exit a parse tree produced by LittleExprParser#read_stmt.
+    def exitRead_stmt(self, ctx:LittleExprParser.Read_stmtContext):
+        idListTree = ctx.id_list()
+        identifier = idListTree.identifier()
+        readNode = ASTRead()
+        readNode.Left = self.CreateIdentifierNode(identifier)
+
+        readNode2 = readNode
+        idTailTree = idListTree.id_tail()     
+        while(idTailTree.getChildCount() != 0):
+            identifier = idTailTree.identifier()
+            readNode.Right = ASTRead()
+            readNode = readNode.Right
+            readNode.Left = self.CreateIdentifierNode(identifier)
+            idTailTree = idTailTree.id_tail() 
+
+        readNode.Right = None
+        self.ASTStack.append(readNode2)
+        return
 
     # Enter a parse tree produced by LittleExprParser#assign_stmt.
     def exitAssign_stmt(self, ctx:LittleExprParser.Assign_stmtContext):
