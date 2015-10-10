@@ -46,7 +46,7 @@ class SymbolTableGenerator(LittleExprListener):
 	# Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
         # If else does not exist
-        if ctx.else_part() is not None:
+        if ctx.else_part() is not None and ctx.else_part().getText():
             self.symbolTable.pop()
         pass
 
@@ -113,14 +113,13 @@ class SymbolTableGenerator(LittleExprListener):
     # AST/Code Generation
     #
     ###########################################################################################################
-    
-    # Enter a parse tree produced by LittleExprParser#stmt_list.
-    def enterStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
+    # Enter a parse tree produced by LittleExprParser#assign_stmt.
+    def exitAssign_stmt(self, ctx:LittleExprParser.Stmt_listContext):
         pass
 
 
-    # Enter a parse tree produced by LittleExprParser#expr.
-    def enterExpr(self, ctx:LittleExprParser.ExprContext):
+    # Enter a parse tree produced by LittleExprParser#stmt_list.
+    def enterStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
         pass
 
     # Exit a parse tree produced by LittleExprParser#expr.
@@ -133,8 +132,7 @@ class SymbolTableGenerator(LittleExprListener):
         else:
             self.ASTStack.append(factorNode)
 
-        print(self.ASTStack[-1].printPostOrder())
-        print(len(self.ASTStack))
+        self.printNewestAST()
         return
 
 
@@ -214,10 +212,9 @@ class SymbolTableGenerator(LittleExprListener):
             self.ASTStack.append(self.CreateINTLITERALNode(INTLITERAL))
         elif ctx.FLOATLITERAL() is not None:
             FLOATLITERAL = ctx.FLOATLITERAL()
-            self.ASTStack.append(self.CreateINTLITERALNode(FLOATLITERAL))
+            self.ASTStack.append(self.CreateFLOATLITERALNode(FLOATLITERAL))
         # Else case handled by default
-        #return self.CreatePrimaryNode(ctx)
-        pass
+        return
 
     # Exit a parse tree produced by LittleExprParser#mulop.
     def exitMulop(self, ctx:LittleExprParser.MulopContext):
@@ -249,25 +246,13 @@ class SymbolTableGenerator(LittleExprListener):
     def CreateEmptyNode(self, ctx:LittleExprParser.IdentifierContext):
         astNode = AST()
         return astNode        
-
-    # Create Primary Node
-    def CreatePrimaryNode(self, ctx:LittleExprParser.PrimaryContext):
-        if ctx.identifier() is not None:
-            identifierNode = ctx.identifier()
-            return self.CreateIdentifierNode(identifierNode)
-        elif ctx.INTLITERAL() is not None:
-            INTLITERAL = ctx.INTLITERAL()
-            return self.CreateINTLITERALNode(INTLITERAL)
-        elif ctx.FLOATLITERAL() is not None:
-            FLOATLITERAL = ctx.FLOATLITERAL()
-            return self.CreateINTLITERALNode(FLOATLITERAL)
-        #else:
-
         pass
 
     # Create Identifier Node
     def CreateIdentifierNode(self, ctx:LittleExprParser.IdentifierContext):
-        astNode = AST(ctx.getChild(0).getText(), LRType=LRTYPE.LTYPE, nodeType=NODETYPE.INTLITERAL)
+        identifier = ctx.getChild(0).getText()
+        identifierSymbol = self.GetSymbolFromSymbolTable(identifier)
+        astNode = AST(identifier, LRType=LRTYPE.LTYPE, nodeType=identifierSymbol[0])
         return astNode
 
     # Create INTLITERAL Node
@@ -292,3 +277,20 @@ class SymbolTableGenerator(LittleExprListener):
         for i in range(1, elementsOnStack+1):
             print("Stack Element {0}".format(-1*i))
             print(self.symbolTable[-1 * i])
+
+    # Get Symbol from table
+    def GetSymbolFromSymbolTable(self, identifier):
+        elementsOnStack = len(self.symbolTable)
+        for i in range(1, elementsOnStack+1):
+            if identifier in self.symbolTable[-1 * i].keys():
+                return self.symbolTable[-1 * i][identifier]
+        raise(ElementOutOfScopeError(identifier))
+
+    # Print newest AST
+    def printNewestAST(self):
+        print("<Expr>")
+        self.ASTStack[-1].printInOrder()
+        print("</Expr>")
+
+class ElementOutOfScopeError(Exception):
+    pass

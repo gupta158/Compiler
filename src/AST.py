@@ -3,7 +3,6 @@ __author__ = 'gupta158, jalliger'
 import sys
 from enum import Enum
 
-Animal = Enum('Animal', 'ant bee cat dog')
 class AST():
 	
 	#nodeType
@@ -21,6 +20,23 @@ class AST():
 		self.LRType = LRType
 		self.code 	= code
 		self.tempReg 	= tempReg
+
+	def printInOrder(self):
+		if self.Left is not None:
+			print("<left>")
+			self.Left.printInOrder()
+			print("</left>")
+
+		print("<node>")
+		self.printNodeInfo()
+		print("</node>")
+
+		if self.Right is not None:
+			print("<right>")
+			self.Right.printInOrder()
+			print("</right>")
+			
+		return
 
 	def printPostOrder(self):
 		if self.Left is not None:
