@@ -56,7 +56,7 @@ class TinyGenerator():
             return True
         return False
 
-    def mathOperandSetup(self, op1, op2, result):
+    def mathOperandSetup(self, op1, op2, result, orderMatters):
         opmrl_op1 = ""
         opmrl_op2 = ""
         reg_op2   = ""
@@ -86,8 +86,9 @@ class TinyGenerator():
         if result == op1:
             return opmrl_op2, reg_op2
 
-        if result == op2:
-            return opmrl_op1, reg_op2
+        if not orderMatters:
+            if result == op2:
+                return opmrl_op1, reg_op2
 
         self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
@@ -99,7 +100,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result)
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, False)
         code.append("addi {0} {1}".format(opmrl_op1, reg_op2))
 
         self.tinyCode += "\n".join(code) + "\n"
@@ -112,7 +113,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, False) 
         code.append("addr {0} {1}".format(opmrl_op1, reg_op2))
 
         self.tinyCode += "\n".join(code) + "\n"
@@ -125,7 +126,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, True) 
         code.append("subi {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -138,7 +139,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, True) 
         code.append("subr {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -151,7 +152,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, False) 
         code.append("muli {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -164,7 +165,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, False) 
         code.append("mulr {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -177,7 +178,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, True) 
         code.append("divi {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -190,7 +191,7 @@ class TinyGenerator():
         result = lineSplit[3]
         code = []
 
-        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result, True) 
         code.append("divr {0} {1}".format(opmrl_op1, reg_op2))
         
         self.tinyCode += "\n".join(code) + "\n"
