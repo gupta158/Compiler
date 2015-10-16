@@ -43,19 +43,19 @@ class Optimizer():
         for IRLine in IRLines:
             regArray = IRLine.Regs
             for reg in regArray:
-                print("----------------------------------------------------------------------")
-                print(mappingDict)
-                print(IRLine.line)
-                print(IRLine.lineNum)
-                print(self.Regs[reg].firstUsed)
-                print(reg)
-                print(self.Regs[reg].lastUsed)
-                print(recycledRegisters)
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                #print("----------------------------------------------------------------------")
+                #print(mappingDict)
+                #print(IRLine.line)
+                #print(IRLine.lineNum)
+                #print(self.Regs[reg].firstUsed)
+                #print(reg)
+                #print(self.Regs[reg].lastUsed)
+                #print(recycledRegisters)
+                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if self.Regs[reg].firstUsed == IRLine.lineNum:
                     if len(recycledRegisters) != 0:
                         mappingDict[reg] = recycledRegisters.pop(0)
-                        self.Regs[mappingDict[reg]].lastUsed = self.Regs[reg].lastUsed 
+                        #self.Regs[mappingDict[reg]].lastUsed = self.Regs[reg].lastUsed 
 
                 elif self.Regs[reg].lastUsed == IRLine.lineNum:
                     if reg in mappingDict.keys():
@@ -65,11 +65,11 @@ class Optimizer():
 
                 if reg in mappingDict.keys():
                     IRLine.updateLine(reg, mappingDict[reg])
-                print("----------------------------------------------------------------------")
-                print(mappingDict)
-                print(IRLine.line)
-                print(recycledRegisters)
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                #print("----------------------------------------------------------------------")
+                #print(mappingDict)
+                #print(IRLine.line)
+                #print(recycledRegisters)
+                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return IRLines
 
     def printRegs(self):
@@ -110,9 +110,8 @@ class IRLine():
                 self.Regs.append(i)
 
     def updateLine(self, reg, newReg):
-        self.line = self.line.replace(reg, newReg)
-        numReg = self.Regs.count(reg)
-        for i in range(0, numReg):
-            self.Regs.remove(reg)
-            self.Regs.append(newReg)
+        self.line = self.line.replace(reg, newReg, 1)
+        #numReg = self.Regs.count(reg)
+        #for i in range(0, numReg):
+        self.Regs = [x if (x != reg) else newReg for x in self.Regs]
 
