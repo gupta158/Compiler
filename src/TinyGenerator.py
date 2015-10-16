@@ -1,0 +1,332 @@
+from antlr4 import *
+from LittleExprParser import LittleExprParser
+from LittleExprListener import LittleExprListener
+from AST import *
+
+# This class defines a complete listener for a parse tree produced by LittleExprParser.
+class TinyGenerator():
+
+    def __init__(self, IRcode):
+        self.IRcode = IRcode
+        self.tinyCode = ""
+        self.declCode = ""
+        self.regNum = 0
+        self.regDict = {}
+        self.declDict = {}
+
+    def generate(self):
+        stmtList = self.IRcode.split("\n")
+        switcher = {
+                "ADDI": self.addi,
+                "ADDF": self.addf,
+                "SUBI": self.subi,
+                "SUBF": self.subf,
+                "MULTI": self.multi,
+                "MULTF": self.multf,
+                "DIVI": self.divi,
+                "DIVF": self.divf,
+                "STOREI": self.storei,
+                "STOREF": self.storei,
+                "GT": self.gt,
+                "GE": self.ge,
+                "LT": self.lt,
+                "LE": self.le,
+                "NE": self.ne,
+                "EQ": self.eq,
+                "JUMP": self.jump,
+                "LABEL": self.label,
+                "READI": self.readi,
+                "READF": self.readf,
+                "WRITEI": self.writei,
+                "WRITEF": self.writef
+            }
+        for line in stmtList:
+            #print(line)
+            # Get the function from switcher dictionary
+            func = switcher.get(line.split(" ")[0], self.errorFunct)
+            # Execute the function
+            func(line)
+
+        self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "sys halt \nend"
+        return
+    def registerAllocate(self, tempName):
+        if not tempName in self.regDict.keys():
+            self.regDict[tempName] = self.regNum
+            self.regNum += 1
+
+    def mathOperandSetup(self, op1, op2, result):
+        opmrl_op1 = ""
+        opmrl_op2 = ""
+        reg_op2   = ""
+
+        if op1.replace(".", "").isdigit():
+            opmrl_op1 = op1
+        elif not op1.startswith("$"):
+            opmrl_op1 = op1
+            self.declDict[opmrl_op1] = ""
+        else:
+            self.registerAllocate(op1)
+            opmrl_op1 = "r{0}".format(self.regDict[op1])
+
+        if op2.replace(".", "").isdigit():
+            opmrl_op2 = op2
+        elif not op2.startswith("$"):
+            opmrl_op2 = op2
+            self.declDict[opmrl_op2] = ""
+        else:
+            self.registerAllocate(op2)
+            opmrl_op2 = "r{0}".format(self.regDict[op2])
+
+        self.registerAllocate(result)
+        reg_op2 = "r{0}".format(self.regDict[result])
+
+        if result == op1:
+            return opmrl_op2, reg_op2
+
+        if result == op2:
+            return opmrl_op1, reg_op2
+
+        self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
+        return opmrl_op2, reg_op2
+
+    def addi(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result)
+        code.append("addi {0} {1}".format(opmrl_op1, reg_op2))
+
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def addf(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("addr {0} {1}".format(opmrl_op1, reg_op2))
+
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def subi(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("subi {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def subf(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("subr {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def multi(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("muli {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def multf(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("mulr {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def divi(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("divi {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def divf(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        code = []
+
+        opmrl_op1, reg_op2 = self.mathOperandSetup(op1, op2, result) 
+        code.append("divr {0} {1}".format(opmrl_op1, reg_op2))
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def storei(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        result = lineSplit[2]
+        code  = []
+        opmrl_op1 = ""
+        opmr_op2  = ""
+
+        if op1.replace(".", "").isdigit():
+            opmrl_op1 = op1
+        elif not op1.startswith("$"):
+            opmrl_op1 = op1
+            self.declDict[opmrl_op1] = ""
+        else:
+            self.registerAllocate(op1)
+            opmrl_op1 = "r{0}".format(self.regDict[op1])
+
+        if not result.startswith("$"):
+            opmr_op2 = result
+            self.declDict[opmr_op2] = ""
+        else:
+            self.registerAllocate(result)
+            opmr_op2 = "r{0}".format(self.regDict[result])
+
+        code.append("move {0} {1}".format(opmrl_op1, opmr_op2)) 
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def gt(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def ge(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def lt(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def le(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def ne(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def eq(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        op2 = lineSplit[2]
+        result = lineSplit[3]
+        pass
+
+    def jump(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        label = lineSplit[3]
+        pass
+
+    def label(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        pass
+
+    def readWriteOperandSetup(self, op2):
+        opmr_op2 = ""
+        if not op2.startswith("$"):
+            opmr_op2 = op2
+            self.declDict[opmr_op2] = ""
+        else:
+            self.registerAllocate(op2)
+            opmr_op2 = "r{0}".format(self.regDict[op2])
+
+        return opmr_op2
+
+    def readi(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        code = []
+
+        opmr_op2 = self.readWriteOperandSetup(result)
+        code.append("sys readi {0}".format(opmr_op2)) 
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def readf(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        code = []
+
+        opmr_op2 = self.readWriteOperandSetup(result)
+        code.append("sys readr {0}".format(opmr_op2)) 
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def writei(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        code = []
+
+        opmr_op2 = self.readWriteOperandSetup(result)
+        code.append("sys writei {0}".format(opmr_op2)) 
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def writef(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        code = []
+
+        opmr_op2 = self.readWriteOperandSetup(result)
+        code.append("sys writer {0}".format(opmr_op2)) 
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def errorFunct(self, IRLine):
+        pass

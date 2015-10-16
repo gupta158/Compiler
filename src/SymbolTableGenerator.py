@@ -2,6 +2,7 @@ from antlr4 import *
 from LittleExprParser import LittleExprParser
 from LittleExprListener import LittleExprListener
 from AST import *
+from TinyGenerator import *
 
 # This class defines a complete listener for a parse tree produced by LittleExprParser.
 class SymbolTableGenerator(LittleExprListener):
@@ -115,7 +116,11 @@ class SymbolTableGenerator(LittleExprListener):
     ###########################################################################################################
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
-        print(self.ASTStack[-1].generateCode())
+        self.ASTStack[-1].generateCode()
+        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        self.tinyGenerator.generate()
+        self.printTinyIR()
+        #self.printNewestAST()
         pass
 
     # Enter a parse tree produced by LittleExprParser#stmt_list.
@@ -330,8 +335,16 @@ class SymbolTableGenerator(LittleExprListener):
     # Print newest AST
     def printNewestAST(self):
         print("<Expr>")
-        self.ASTStack[-1].printPostOrder()
+        self.ASTStack[-1].printInOrder()
         print("</Expr>")
+
+    def printTinyIR(self):
+        print(";IR code")
+        print(";" + self.ASTStack[-1].code.replace("\n", "\n;") + "tinycode")  
+        print(self.tinyGenerator.tinyCode)
+        
+
+
 
 class ElementOutOfScopeError(Exception):
     pass
