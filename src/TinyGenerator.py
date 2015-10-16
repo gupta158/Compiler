@@ -53,11 +53,14 @@ class TinyGenerator():
         if not tempName in self.regDict.keys():
             self.regDict[tempName] = self.regNum
             self.regNum += 1
+            return True
+        return False
 
     def mathOperandSetup(self, op1, op2, result):
         opmrl_op1 = ""
         opmrl_op2 = ""
         reg_op2   = ""
+        op1Allocated = False
 
         if op1.replace(".", "").isdigit():
             opmrl_op1 = op1
@@ -65,7 +68,7 @@ class TinyGenerator():
             opmrl_op1 = op1
             self.declDict[opmrl_op1] = ""
         else:
-            self.registerAllocate(op1)
+            opAllocated = self.registerAllocate(op1)
             opmrl_op1 = "r{0}".format(self.regDict[op1])
 
         if op2.replace(".", "").isdigit():

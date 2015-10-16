@@ -3,6 +3,7 @@ from LittleExprParser import LittleExprParser
 from LittleExprListener import LittleExprListener
 from AST import *
 from TinyGenerator import *
+from Optimizer import *
 
 # This class defines a complete listener for a parse tree produced by LittleExprParser.
 class SymbolTableGenerator(LittleExprListener):
@@ -117,6 +118,8 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
         self.ASTStack[-1].generateCode()
+        self.optimizer = Optimizer(self.ASTStack[-1].code)
+        self.ASTStack[-1].code = self.optimizer.optimize()
         self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
         self.tinyGenerator.generate()
         self.printTinyIR()
