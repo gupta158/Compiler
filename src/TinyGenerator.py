@@ -11,6 +11,7 @@ class TinyGenerator():
         self.tinyCode = ""
         self.declCode = ""
         self.regNum = 0
+        self.tempNum = 0
         self.regDict = {}
         self.declDict = {}
 
@@ -55,6 +56,11 @@ class TinyGenerator():
             self.regNum += 1
             return True
         return False
+    def temporaryAllocate(self):
+            tempName = "&{}".format(self.tempNum)
+            self.tempNum += 1
+            self.registerAllocate(tempName)
+            return tempName
 
     def mathOperandSetup(self, op1, op2, result, orderMatters):
         opmrl_op1 = ""
@@ -86,9 +92,13 @@ class TinyGenerator():
         if result == op1:
             return opmrl_op2, reg_op2
 
-        if not orderMatters:
-            if result == op2:
+        if result == op2:
+            if not orderMatters:
                 return opmrl_op1, reg_op2
+            else:
+                tempName = self.temporaryAllocate()
+                self.tinyCode += ("move {0} r{1}\n".format(opmrl_op2, self.regDict[tempName]))
+                opmrl_op2 = "r{0}".format(self.regDict[tempName])
 
         self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
