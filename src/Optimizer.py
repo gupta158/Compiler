@@ -15,6 +15,9 @@ class Optimizer():
         lines = self.IRcode.rstrip().split("\n")
         IRLines = self.CreateLineObjects(lines)
         self.markLines(IRLines)
+        IRLines = self.simplifyMoves(IRLines)
+        self.Regs = {}
+        self.markLines(IRLines)
         IRLines = self.reduceRegisters(IRLines)
         #self.printRegs()
         #print(self.createNewIR(IRLines))
@@ -54,7 +57,7 @@ class Optimizer():
                 #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if self.Regs[reg].firstUsed == IRLine.lineNum:
                     if len(recycledRegisters) != 0:
-                        mappingDict[reg] = recycledRegisters.pop(0)
+                        mappingDict[reg] = recycledRegisters.pop()
                         #self.Regs[mappingDict[reg]].lastUsed = self.Regs[reg].lastUsed 
 
                 elif self.Regs[reg].lastUsed == IRLine.lineNum:
@@ -71,6 +74,30 @@ class Optimizer():
                 #print(recycledRegisters)
                 #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return IRLines
+
+
+    def simplifyMoves(self, IRLines):
+        simpIRLines = []
+        lastWasMove = False
+        linenum = 0 
+        lastlinesplit = []
+        for line in IRLines:
+            splitline = line.line.split(" ")
+            lineIsMove = "STOREI" in splitline[0] or "STOREF" in splitline[0]
+            if lastWasMove and lineIsMove and splitline[-3].startswith("$") and lastlinesplit[-2] == splitline[-3]:
+                simpIRLines[-1].removeTemp(splitline[-3], splitline[-2])
+                #simpIRLines.append(line)
+            else:
+                simpIRLines.append(line)
+                simpIRLines[-1].linenum = linenum
+                linenum += 1
+
+            lastWasMove = lineIsMove
+            lastlinesplit = splitline
+            #print(lastWasMove)
+        return simpIRLines
+
+
 
     def printRegs(self):
         for i in self.Regs.keys():
@@ -114,4 +141,8 @@ class IRLine():
         #numReg = self.Regs.count(reg)
         #for i in range(0, numReg):
         self.Regs = [x if (x != reg) else newReg for x in self.Regs]
+
+    def removeTemp(self, reg, replacement):
+        self.line = self.line.replace(reg, replacement)
+        self.Regs.remove(reg)
 
