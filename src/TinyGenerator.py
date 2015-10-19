@@ -49,7 +49,11 @@ class TinyGenerator():
             # Execute the function
             func(line)
 
-        self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "sys halt \nend"
+        if len(self.declDict) != 0:
+            self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "sys halt \nend"
+        else:
+            self.tinyCode = self.tinyCode + "sys halt \nend"
+        
         return
     def registerAllocate(self, tempName):
         if not tempName in self.regDict.keys():
@@ -69,7 +73,7 @@ class TinyGenerator():
         reg_op2   = ""
         op1Allocated = False
 
-        if op1.replace(".", "").isdigit():
+        if op1.replace(".", "").replace("-", "").isdigit():
             opmrl_op1 = op1
         elif not op1.startswith("$"):
             opmrl_op1 = op1
@@ -78,7 +82,7 @@ class TinyGenerator():
             opAllocated = self.registerAllocate(op1)
             opmrl_op1 = "r{0}".format(self.regDict[op1])
 
-        if op2.replace(".", "").isdigit():
+        if op2.replace(".", "").replace("-", "").isdigit():
             opmrl_op2 = op2
         elif not op2.startswith("$"):
             opmrl_op2 = op2
@@ -222,7 +226,7 @@ class TinyGenerator():
         opmrl_op1 = ""
         opmr_op2  = ""
 
-        if op1.replace(".", "").isdigit():
+        if op1.replace(".", "").replace("-", "").isdigit():
             opmrl_op1 = op1
         elif not op1.startswith("$"):
             opmrl_op1 = op1
@@ -295,9 +299,13 @@ class TinyGenerator():
         result = lineSplit[1]
         pass
 
-    def readWriteOperandSetup(self, op2):
+    def readWriteOperandSetup(self, op2, code):
         opmr_op2 = ""
-        if not op2.startswith("$"):
+        if op2.replace(".", "").replace("-", "").isdigit():
+            regVar = self.temporaryAllocate()
+            code.append("move {0} r{1}".format(op2, self.regDict[regVar])) 
+            opmr_op2 = "r" + str(self.regDict[regVar])    
+        elif not op2.startswith("$"):
             opmr_op2 = op2
             self.declDict[opmr_op2] = ""
         else:
@@ -311,7 +319,7 @@ class TinyGenerator():
         result = lineSplit[1]
         code = []
 
-        opmr_op2 = self.readWriteOperandSetup(result)
+        opmr_op2 = self.readWriteOperandSetup(result, code)
         code.append("sys readi {0}".format(opmr_op2)) 
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -322,7 +330,7 @@ class TinyGenerator():
         result = lineSplit[1]
         code = []
 
-        opmr_op2 = self.readWriteOperandSetup(result)
+        opmr_op2 = self.readWriteOperandSetup(result, code)
         code.append("sys readr {0}".format(opmr_op2)) 
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -333,7 +341,7 @@ class TinyGenerator():
         result = lineSplit[1]
         code = []
 
-        opmr_op2 = self.readWriteOperandSetup(result)
+        opmr_op2 = self.readWriteOperandSetup(result, code)
         code.append("sys writei {0}".format(opmr_op2)) 
         
         self.tinyCode += "\n".join(code) + "\n"
@@ -344,7 +352,7 @@ class TinyGenerator():
         result = lineSplit[1]
         code = []
 
-        opmr_op2 = self.readWriteOperandSetup(result)
+        opmr_op2 = self.readWriteOperandSetup(result, code)
         code.append("sys writer {0}".format(opmr_op2)) 
         
         self.tinyCode += "\n".join(code) + "\n"

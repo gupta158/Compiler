@@ -14,11 +14,13 @@ class Optimizer():
     def optimize(self):
         lines = self.IRcode.rstrip().split("\n")
         IRLines = self.CreateLineObjects(lines)
+        IRLines = self.checkConstants(IRLines)
         self.markLines(IRLines)
         IRLines = self.simplifyMoves(IRLines)
         self.Regs = {}
         self.markLines(IRLines)
         IRLines = self.reduceRegisters(IRLines)
+
         #self.printRegs()
         #print(self.createNewIR(IRLines))
 
@@ -111,6 +113,70 @@ class Optimizer():
 
         return newIR
 
+    def checkConstants(self, IRLines):
+        def ifConstant(value):
+            if value in regConstantDict.keys() and regConstantDict[value][1]:
+                return True
+
+            return False
+
+        newIRLines = []
+        regConstantDict = {}
+        for IRLine in IRLines:
+            newIRLines.append(IRLine)
+            regArray = IRLine.Regs
+            isStore = IRLine.op in ["STOREI"]
+
+            splitline = IRLine.line.split(" ")
+            if isStore:
+                if splitline[1].replace(".", "").replace("-", "").isdigit():
+                    regConstantDict[splitline[2]] = [splitline[1], 1]
+                    newIRLines.pop()
+                elif ifConstant(splitline[1]):
+                    regConstantDict[splitline[2]] = [regConstantDict[splitline[1]][0], 1]
+                    newIRLines.pop()
+                continue
+
+
+            isMath = IRLine.op in ["ADDI", "SUBI", "MULTI", "DIVI"]
+
+            if isMath and ifConstant(splitline[1]) and ifConstant(splitline[2]):
+                outVal = 0
+                if IRLine.op.startswith("ADD"):
+                    outVal = float(regConstantDict[splitline[1]][0]) + float(regConstantDict[splitline[2]][0]) 
+                elif IRLine.op.startswith("SUB"):
+                    outVal = float(regConstantDict[splitline[1]][0]) - float(regConstantDict[splitline[2]][0]) 
+                elif IRLine.op.startswith("MULT"):
+                    outVal = float(regConstantDict[splitline[1]][0]) * float(regConstantDict[splitline[2]][0]) 
+                elif IRLine.op.startswith("DIV"):
+                    outVal = float(regConstantDict[splitline[1]][0]) / float(regConstantDict[splitline[2]][0]) 
+
+
+                if IRLine.op.endswith("I"):
+                    outVal = int(outVal)
+                    regConstantDict[splitline[3]] = [outVal, 1]
+
+                else:
+                    regConstantDict[splitline[3]] = [outVal, 1]
+                newIRLines.pop()
+
+            elif ifConstant(splitline[1]):
+                IRLine.line = IRLine.line.replace(splitline[1], str(regConstantDict[splitline[1]][0]), 1)
+                if splitline[1] in IRLine.Regs:
+                    IRLine.Regs.remove(splitline[1])
+
+            elif isMath and ifConstant(splitline[2]):
+                IRLine.line = IRLine.line.replace(splitline[2], str(regConstantDict[splitline[2]][0]), 1)
+                if splitline[2] in IRLine.Regs:
+                    IRLine.Regs.remove(splitline[2])
+
+        for line in newIRLines:
+            #print(line.line)
+            pass
+        return newIRLines
+
+
+
 
 
 class Register():
@@ -126,12 +192,14 @@ class IRLine():
     def __init__(self, line, lineNum):
         self.line = line
         self.Regs = []
+        self.op = ""
         self.newLine = line
         self.assignVariables()
         self.lineNum = lineNum
 
     def assignVariables(self):
         opSplit = self.line.rstrip().split(" ")
+        self.op = opSplit[0]
         for i in opSplit:
             if i.startswith("$"):
                 self.Regs.append(i)

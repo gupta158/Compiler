@@ -118,6 +118,13 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
         self.ASTStack[-1].generateCode()
+
+        #Pre Optimized code
+        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        self.tinyGenerator.generate()
+        self.printTinyIR(comment = 1)
+
+        #Optimized code
         self.optimizer = Optimizer(self.ASTStack[-1].code)
         self.ASTStack[-1].code = self.optimizer.optimize()
         self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
@@ -341,10 +348,17 @@ class SymbolTableGenerator(LittleExprListener):
         self.ASTStack[-1].printInOrder()
         print("</Expr>")
 
-    def printTinyIR(self):
-        print(";IR code")
-        print(";" + self.ASTStack[-1].code.replace("\n", "\n;") + "tinycode")  
-        print(self.tinyGenerator.tinyCode)
+    def printTinyIR(self, comment=0):
+        if comment:
+            print(";Pre optimized code")
+            print(";;;IR code")
+            print(";;;" + self.ASTStack[-1].code.replace("\n", "\n;;;") + "tinycode")  
+            print(";;" + self.tinyGenerator.tinyCode.replace("\n", "\n;;"))
+            print(";END OF Pre optimized code")
+        else:
+            print(";IR code")
+            print(";" + self.ASTStack[-1].code.replace("\n", "\n;") + "tinycode")  
+            print(self.tinyGenerator.tinyCode)
         
 
 
