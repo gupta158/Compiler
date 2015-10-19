@@ -14,6 +14,7 @@ class TinyGenerator():
         self.tempNum = 0
         self.regDict = {}
         self.declDict = {}
+        self.regVals = {}
 
     def generate(self):
         stmtList = self.IRcode.split("\n")
@@ -99,6 +100,12 @@ class TinyGenerator():
                 tempName = self.temporaryAllocate()
                 self.tinyCode += ("move {0} r{1}\n".format(opmrl_op2, self.regDict[tempName]))
                 opmrl_op2 = "r{0}".format(self.regDict[tempName])
+
+        if reg_op2 in self.regVals.keys():
+            if opmrl_op1 == self.regVals[reg_op2][0] and self.regVals[reg_op2][1] == 1:
+                return opmrl_op2, reg_op2
+            else:
+                self.regVals[reg_op2][1] = 0
 
         self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
@@ -231,6 +238,7 @@ class TinyGenerator():
             self.registerAllocate(result)
             opmr_op2 = "r{0}".format(self.regDict[result])
 
+        self.regVals[opmrl_op1] = [opmr_op2, 1]
         code.append("move {0} {1}".format(opmrl_op1, opmr_op2)) 
         self.tinyCode += "\n".join(code) + "\n"
         pass
