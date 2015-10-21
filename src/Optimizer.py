@@ -120,12 +120,17 @@ class Optimizer():
 
             return False
 
+        def invalidate(value):
+            if value in regConstantDict.keys(): 
+                regConstantDict[value][1] = 0
+
         newIRLines = []
         regConstantDict = {}
         for IRLine in IRLines:
             newIRLines.append(IRLine)
             regArray = IRLine.Regs
-            isStore = IRLine.op in ["STOREI"]
+            isStore = IRLine.op in ["STOREI", "STOREF"]
+            isRead  = IRLine.op in ["READI", "READF"]
 
             splitline = IRLine.line.split(" ")
             if isStore:
@@ -135,7 +140,12 @@ class Optimizer():
                 elif ifConstant(splitline[1]):
                     regConstantDict[splitline[2]] = [regConstantDict[splitline[1]][0], 1]
                     newIRLines.pop()
+                else:
+                    invalidate(splitline[2])
                 continue
+            elif isRead:
+                invalidate(splitline[1])
+
 
 
             isMath = IRLine.op in ["ADDI", "SUBI", "MULTI", "DIVI"]
@@ -160,19 +170,25 @@ class Optimizer():
                     regConstantDict[splitline[3]] = [outVal, 1]
                 newIRLines.pop()
 
-            elif ifConstant(splitline[1]):
-                IRLine.line = IRLine.line.replace(splitline[1], str(regConstantDict[splitline[1]][0]), 1)
-                if splitline[1] in IRLine.Regs:
-                    IRLine.Regs.remove(splitline[1])
+            else:
+                if ifConstant(splitline[1]):
+                    IRLine.line = IRLine.line.replace(splitline[1], str(regConstantDict[splitline[1]][0]), 1)
+                    if splitline[1] in IRLine.Regs:
+                        IRLine.Regs.remove(splitline[1])
+                    if isMath:
+                        invalidate(splitline[3])
 
-            elif isMath and ifConstant(splitline[2]):
-                IRLine.line = IRLine.line.replace(splitline[2], str(regConstantDict[splitline[2]][0]), 1)
-                if splitline[2] in IRLine.Regs:
-                    IRLine.Regs.remove(splitline[2])
+                if len(splitline) >= 3 and ifConstant(splitline[2]):
+                    IRLine.line = IRLine.line.replace(splitline[2], str(regConstantDict[splitline[2]][0]), 1)
+                    if splitline[2] in IRLine.Regs:
+                        IRLine.Regs.remove(splitline[2])
+                    if isMath:
+                        invalidate(splitline[3])
 
         for line in newIRLines:
             #print(line.line)
             pass
+
         return newIRLines
 
 
