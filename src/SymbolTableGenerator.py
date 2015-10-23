@@ -128,21 +128,17 @@ class SymbolTableGenerator(LittleExprListener):
    
     # Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
-        # If else does not exist
-        if ctx.else_part() is not None and not ctx.else_part().getText():
-            self.symbolTable.pop()
-        ifNode = ASTIf()
-        labelNode = ASTLabel()
-
+        ifNode = ASTIf()        
         
+        # If else does not exist
         if ctx.else_part() is not None and ctx.else_part().getText():
+            self.symbolTable.pop()
             ifNode.ElseNode = self.ASTStack.pop()
 
         ifNode.ThenNode = self.ASTStack.pop()
         ifNode.CondNode = self.ASTStack.pop()
-        ifNode.ExitLabelNode = labelNode
+        ifNode.setupNode()
 
-        ifNode.CondNode.endLabel = labelNode.labelNum
         self.ASTStack.append(ifNode)
                
         pass
@@ -151,6 +147,21 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#for_stmt.
     def exitFor_stmt(self, ctx:LittleExprParser.For_stmtContext):
         self.symbolTable.pop()
+
+        forNode = ASTFor()
+
+        forNode.StmtNode      = self.ASTStack.pop()
+        forNode.IncrNode      = self.ASTStack.pop()
+        forNode.CondNodeStart = self.ASTStack.pop()
+        forNode.InitNode      = self.ASTStack.pop()
+
+        forNode.setupNode()
+        self.ASTStack.append(forNode)
+        self.ASTStack[-1].generateCode()
+        #self.printNewestAST()
+        print(self.ASTStack[-1].code)
+        input()
+                   
         pass
 
 
@@ -168,17 +179,17 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#mulop.
     def exitCompop(self, ctx:LittleExprParser.CompopContext):
         if ctx.LT() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.LT, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.LT), LRType=LRTYPE.RTYPE))
         elif ctx.GT() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.GT, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.GT), LRType=LRTYPE.RTYPE))
         elif ctx.EQU() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.EQU, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.EQU), LRType=LRTYPE.RTYPE))
         elif ctx.NEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.NEQ, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.NEQ), LRType=LRTYPE.RTYPE))
         elif ctx.LEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.LEQ, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.LEQ), LRType=LRTYPE.RTYPE))
         elif ctx.GEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.GEQ, LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.GEQ), LRType=LRTYPE.RTYPE))
 
     # Enter a parse tree produced by LittleExprParser#stmt_list.
     def exitStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
@@ -238,7 +249,7 @@ class SymbolTableGenerator(LittleExprListener):
         return
 
     # Enter a parse tree produced by LittleExprParser#assign_stmt.
-    def exitAssign_stmt(self, ctx:LittleExprParser.Assign_stmtContext):
+    def exitAssign_expr(self, ctx:LittleExprParser.Assign_stmtContext):
         identifierNode = ctx.getChild(0)
         exprNode = self.ASTStack.pop()
 
