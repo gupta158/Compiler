@@ -13,6 +13,7 @@ class TempReg():
 
 class AST():
 	tempRegNum = 1
+	codeLabelNum = 1
 	
 	#nodeType
 	# INTLITERAL    => 1
@@ -97,25 +98,6 @@ class ASTMath(AST):
 
 	def generateSelfCode(self, lCode, rCode):
 		newCode = ""	
-		# if(self.Left.LRType == LRTYPE.LTYPE):
-		# 	if(self.Left.nodeType == NODETYPE.FLOATLITERAL):
-		# 		lCode = "STOREF {0} $T{1} \n".format(self.Left.value, AST.tempRegNum)
-		# 		self.Left.tempReg = "$T{0}".format(AST.tempRegNum)
-		# 		AST.tempRegNum += 1
-		# 	elif(self.Left.nodeType == NODETYPE.INTLITERAL):
-		# 		lCode = "STOREI {0} $T{1} \n".format(self.Left.value, AST.tempRegNum)
-		# 		self.Left.tempReg = "$T{0}".format(AST.tempRegNum)
-		# 		AST.tempRegNum += 1
-
-		# if(self.Right.LRType == LRTYPE.LTYPE):
-		# 	if(self.Right.nodeType == NODETYPE.FLOATLITERAL):
-		# 		rCode = "STOREF {0} $T{1} \n".format(self.Right.value, AST.tempRegNum)
-		# 		self.Right.tempReg = "$T{0}".format(AST.tempRegNum)
-		# 		AST.tempRegNum += 1
-		# 	elif(self.Right.nodeType == NODETYPE.INTLITERAL):
-		# 		rCode = "STOREI {0} $T{1} \n".format(self.Right.value, AST.tempRegNum)
-		# 		self.Right.tempReg = "$T{0}".format(AST.tempRegNum)
-		# 		AST.tempRegNum += 1
 			
 		if(self.Left.nodeType == NODETYPE.INTLITERAL):
 			self.nodeType = NODETYPE.INTLITERAL
@@ -164,7 +146,7 @@ class ASTAssign(AST):
 		super().__init__(value="Assign", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
 
 	def printNodeInfo(self):
-		print("ASSIGN, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+		print("ASSIGN, value = {0}, LRType = {1}, type={2}, tempReg = {3} \n".format(self.value, self.LRType, self.nodeType, self.tempReg))
 
 	def generateSelfCode(self, lCode, rCode):
 		self.code = ""
@@ -227,6 +209,113 @@ class ASTRead(AST):
 		if self.Right is not None:
 			self.code = self.code + rCode
 		return self.code
+
+
+# Conditions
+class ASTCond(AST):
+	def __init__(self, opcode, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+		self.opcode = opcode
+		self.endLabel = ""
+		self.startLabel = ""
+		super().__init__("COND", nodeType, LRType, code, tempReg)
+
+	def printNodeInfo(self):
+		print("COMPOP, opcode = {0}, LRType = {1}, type={2} \n".format(self.opcode, self.LRType, self.nodeType))
+
+	def generateSelfCode(self, lCode, rCode):
+		newCode = ""			
+
+		rightRegValue = ""
+		leftRegValue = ""
+
+		if self.Right.tempReg is not None:
+			rightRegValue = self.Right.tempReg
+		else: 	
+			rightRegValue = self.Right.value
+
+		if self.Left.tempReg is not None:
+			leftRegValue = self.Left.tempReg
+		else: 	
+			leftRegValue = self.Left.value
+			
+		if(self.Left.nodeType == NODETYPE.FLOATLITERAL):
+			self.nodeType = NODETYPE.FLOATLITERAL
+		else:
+			self.nodeType = NODETYPE.INTLITERAL
+
+		if(self.opcode == COMPOP.LT):
+			newCode = "GE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+		elif(self.opcode == COMPOP.GT):
+			newCode = "LEQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+		elif(self.opcode == COMPOP.EQU):
+			newCode = "NEQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+		elif(self.opcode == COMPOP.NEQ):
+			newCode = "EQU {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+		elif(self.opcode == COMPOP.LEQ):
+			newCode = "GT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+		elif(self.opcode == COMPOP.GEQ):
+			newCode = "LT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+
+		self.code = lCode + rCode + newCode
+		return self.code
+
+
+class ASTIf(AST):
+	def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+		self.CondNode 	   = None
+		self.ThenNode 	   = None
+		self.ElseNode 	   = None
+		self.ExitLabelNode = None
+
+		super().__init__("IF", nodeType, LRType, code, tempReg)
+
+	def printNodeInfo(self):
+		print("IF, opcode = {0}, LRType = {1}, type={2} \n".format(self.opcode, self.LRType, self.nodeType))
+
+	def generateCode(self):
+		condCode	  = ""
+		thenCode	  = ""
+		elseCode 	  = ""
+		exitLabelCode = ""
+
+		if self.CondNode is not None:
+			condCode = self.CondNode.generateCode()
+		if self.ThenNode is not None:
+			thenCode = self.ThenNode.generateCode()	
+		if self.ElseNode is not None:
+			elseCode = self.ElseNode.generateCode()
+		if self.ExitLabelNode is not None:
+			elseCode = self.ExitLabelNode.generateCode()
+
+		return self.generateSelfCode(condCode, thenCode, elseCode, exitLabelCode)
+
+	def generateSelfCode(self, condCode, thenCode, elseCode, exitLabelCode):
+		pass
+
+
+class ASTLabel(AST):	
+
+	def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+		super().__init__(value="LABEL", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+	def printNodeInfo(self):
+		print("LABEL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+
+	def generateSelfCode(self, lCode, rCode):
+		self.code = lCode
+		if self.Right is not None:
+			self.code = self.code + rCode
+		return self.code
+
+
+class COMPOP(Enum):
+    LT 		= 1
+    GT 		= 2
+    EQU 	= 3
+    NEQ		= 4
+    LEQ 	= 5
+    GEQ 	= 6
+
 
 class MATHOP(Enum):
 	ADD 	= 1
