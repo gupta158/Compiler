@@ -379,7 +379,6 @@ class ASTFor(AST):
         if self.LoopLabelNode is not None:
             loopLabelCode = self.LoopLabelNode.generateCode()
 
-        print(loopLabelCode)
         return self.generateSelfCode(condCodeStart, condCodeEnd, initCode, incrCode, stmtCode, exitLabelCode, loopLabelCode)
 
     def generateSelfCode(self, condCodeStart, condCodeEnd, initCode, incrCode, stmtCode, exitLabelCode, loopLabelCode):

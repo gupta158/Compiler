@@ -151,9 +151,15 @@ class SymbolTableGenerator(LittleExprListener):
         forNode = ASTFor()
 
         forNode.StmtNode      = self.ASTStack.pop()
-        forNode.IncrNode      = self.ASTStack.pop()
+
+        if ctx.incr_stmt() is not None and ctx.incr_stmt().getText():
+            forNode.IncrNode      = self.ASTStack.pop()
+
+
         forNode.CondNodeStart = self.ASTStack.pop()
-        forNode.InitNode      = self.ASTStack.pop()
+
+        if ctx.init_stmt() is not None and ctx.init_stmt().getText():
+            forNode.InitNode      = self.ASTStack.pop()
 
         forNode.setupNode()
         self.ASTStack.append(forNode)
