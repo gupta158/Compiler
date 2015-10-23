@@ -40,7 +40,8 @@ class TinyGenerator():
                 "READI": self.readi,
                 "READF": self.readf,
                 "WRITEI": self.writei,
-                "WRITEF": self.writef
+                "WRITEF": self.writef,
+                "WRITES": self.writes
             }
         for line in stmtList:
             #print(line)
@@ -354,6 +355,16 @@ class TinyGenerator():
 
         opmr_op2 = self.readWriteOperandSetup(result, code)
         code.append("sys writer {0}".format(opmr_op2)) 
+        
+        self.tinyCode += "\n".join(code) + "\n"
+        pass
+
+    def writes(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        result = lineSplit[1]
+        code = []
+
+        code.append("sys writes {0}".format(result)) 
         
         self.tinyCode += "\n".join(code) + "\n"
         pass
