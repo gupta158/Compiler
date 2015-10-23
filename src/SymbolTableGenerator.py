@@ -14,6 +14,7 @@ class SymbolTableGenerator(LittleExprListener):
         self.symbolTable = []
         self.printSymbolTable = []
         self.ASTStack  = []
+        self.StringStores = []
 
 	# Enter a parse tree produced by LittleExprParser#program.
     def enterProgram(self, ctx:LittleExprParser.ProgramContext):
@@ -110,7 +111,7 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
         self.ASTStack[-1].generateCode()
-        print(self.ASTStack[-1].code)
+        #print(self.ASTStack[-1].code)
         # #Pre Optimized code
         # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
         # self.tinyGenerator.generate()
@@ -119,10 +120,10 @@ class SymbolTableGenerator(LittleExprListener):
         # #Optimized code
         # self.optimizer = Optimizer(self.ASTStack[-1].code)
         # self.ASTStack[-1].code = self.optimizer.optimize()
-        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        # self.tinyGenerator.generate()
-        # self.printTinyIR()
-        # #self.printNewestAST()
+        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        self.tinyGenerator.generate()
+        self.printTinyIR()
+        #self.printNewestAST()
         pass
 
    
@@ -184,13 +185,13 @@ class SymbolTableGenerator(LittleExprListener):
         elif ctx.GT() is not None:
             self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.GT), LRType=LRTYPE.RTYPE))
         elif ctx.EQU() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.EQU), LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.EQ), LRType=LRTYPE.RTYPE))
         elif ctx.NEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.NEQ), LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.NE), LRType=LRTYPE.RTYPE))
         elif ctx.LEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.LEQ), LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.LE), LRType=LRTYPE.RTYPE))
         elif ctx.GEQ() is not None:
-            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.GEQ), LRType=LRTYPE.RTYPE))
+            self.ASTStack.append(ASTCond(opcode=COMPOP.inverseOP(COMPOP.GE), LRType=LRTYPE.RTYPE))
 
     # Enter a parse tree produced by LittleExprParser#stmt_list.
     def exitStmt_list(self, ctx:LittleExprParser.Stmt_listContext):
@@ -215,15 +216,42 @@ class SymbolTableGenerator(LittleExprListener):
         identifier = idListTree.identifier()
         writeNode = ASTWrite()
         writeNode.Left = self.CreateIdentifierNode(identifier)
+        identifierSymbol = self.GetSymbolFromSymbolTable(identifier.getText())
+        addStore = False
+        stringLiteral = None
+
+
+        if identifierSymbol[0] == "STRING":
+            if identifier not in self.StringStores:
+                self.StringStores.append(identifier)
+                addStore = True
+                stringLiteral = identifierSymbol[1]
+
+        writeNode.addStore = addStore
+        writeNode.stringLiteral = stringLiteral
 
         writeNode2 = writeNode
         idTailTree = idListTree.id_tail()     
         while(idTailTree.getChildCount() != 0):
+            addStore = False
+            stringLiteral = None
+
             identifier = idTailTree.identifier()
+            identifierSymbol = self.GetSymbolFromSymbolTable(identifier.getText())
             writeNode.Right = ASTWrite()
             writeNode = writeNode.Right
             writeNode.Left = self.CreateIdentifierNode(identifier)
             idTailTree = idTailTree.id_tail() 
+
+            if identifierSymbol[0] == "STRING":
+                if identifier.getText() not in self.StringStores:
+                    self.StringStores.append(identifier.getText())
+                    addStore = True
+                    stringLiteral = identifierSymbol[1]
+                    # print(stringLiteral)
+
+            writeNode.addStore = addStore
+            writeNode.stringLiteral = stringLiteral
 
         writeNode.Right = None
         self.ASTStack.append(writeNode2)
@@ -370,7 +398,7 @@ class SymbolTableGenerator(LittleExprListener):
             value = identifier
         elif identifierSymbol[0] == "STRING":
             identifierType = NODETYPE.STRINGLITERAL
-            value = identifierSymbol[1]
+            value = identifier
 
         astNode = AST(value=value, LRType=LRTYPE.LTYPE, nodeType=identifierType, tempReg=value)
         return astNode

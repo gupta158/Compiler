@@ -178,7 +178,9 @@ class ASTStmt(AST):
 
 
 class ASTWrite(AST):
-    def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+    def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None, addStore=False, stringLiteral=None ):
+        self.addStore = addStore
+        self.stringLiteral = stringLiteral
         super().__init__(value="Write", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
 
     def printNodeInfo(self):
@@ -190,7 +192,9 @@ class ASTWrite(AST):
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
             self.code = "WRITEF {0} \n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.STRINGLITERAL):
-            self.code = "WRITES {0} \n".format(self.Left.tempReg)
+            if self.addStore:
+                self.code = "STORES {0} {1} \n".format(self.stringLiteral, self.Left.tempReg)
+            self.code += "WRITES {0} \n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
         return self.code
@@ -249,14 +253,14 @@ class ASTCond(AST):
             newCode = "LT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
         elif(self.opcode == COMPOP.GT):
             newCode = "GT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.EQU):
-            newCode = "EQU {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.NEQ):
-            newCode = "NEQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.LEQ):
-            newCode = "LEQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.GEQ):
-            newCode = "GEQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        elif(self.opcode == COMPOP.EQ):
+            newCode = "EQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        elif(self.opcode == COMPOP.NE):
+            newCode = "NE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        elif(self.opcode == COMPOP.LE):
+            newCode = "LE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        elif(self.opcode == COMPOP.GE):
+            newCode = "GE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
 
         self.code = lCode + rCode + newCode
         return self.code
@@ -448,23 +452,23 @@ class ASTLabel(AST):
 class COMPOP(Enum):
     LT      = 1
     GT      = 2
-    EQU     = 3
-    NEQ     = 4
-    LEQ     = 5
-    GEQ     = 6
+    EQ      = 3
+    NE      = 4
+    LE      = 5
+    GE      = 6
 
     def inverseOP(op):
         if op == COMPOP.LT:
-            return COMPOP.GEQ
+            return COMPOP.GE
         elif op == COMPOP.GT:
-            return COMPOP.LEQ
-        elif op == COMPOP.EQU:
-            return COMPOP.NEQ
-        elif op == COMPOP.NEQ:
-            return COMPOP.EQU
-        elif op == COMPOP.LEQ:
+            return COMPOP.LE
+        elif op == COMPOP.EQ:
+            return COMPOP.NE
+        elif op == COMPOP.NE:
+            return COMPOP.EQ
+        elif op == COMPOP.LE:
             return COMPOP.GT
-        elif op == COMPOP.GEQ:
+        elif op == COMPOP.GE:
             return COMPOP.LT
         pass
 

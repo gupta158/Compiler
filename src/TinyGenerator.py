@@ -15,6 +15,7 @@ class TinyGenerator():
         self.regDict = {}
         self.declDict = {}
         self.regVals = {}
+        self.stringDict = {}
 
     def generate(self):
         stmtList = self.IRcode.split("\n")
@@ -29,12 +30,13 @@ class TinyGenerator():
                 "DIVF": self.divf,
                 "STOREI": self.storei,
                 "STOREF": self.storei,
-                "GT": self.gt,
-                "GE": self.ge,
-                "LT": self.lt,
-                "LE": self.le,
-                "NE": self.ne,
-                "EQ": self.eq,
+                "STORES": self.stores,
+                "GT": self.comp,
+                "GE": self.comp,
+                "LT": self.comp,
+                "LE": self.comp,
+                "NE": self.comp,
+                "EQ": self.comp,
                 "JUMP": self.jump,
                 "LABEL": self.label,
                 "READI": self.readi,
@@ -226,10 +228,13 @@ class TinyGenerator():
         code  = []
         opmrl_op1 = ""
         opmr_op2  = ""
+        isMem1 = False
+        isMem2 = False
 
         if op1.replace(".", "").replace("-", "").isdigit():
             opmrl_op1 = op1
         elif not op1.startswith("$"):
+            isMem1 = True
             opmrl_op1 = op1
             self.declDict[opmrl_op1] = ""
         else:
@@ -237,6 +242,7 @@ class TinyGenerator():
             opmrl_op1 = "r{0}".format(self.regDict[op1])
 
         if not result.startswith("$"):
+            isMem2 = True
             opmr_op2 = result
             self.declDict[opmr_op2] = ""
         else:
@@ -244,61 +250,130 @@ class TinyGenerator():
             opmr_op2 = "r{0}".format(self.regDict[result])
 
         self.regVals[opmrl_op1] = [opmr_op2, 1]
+
+        if isMem1 and isMem2:
+            tempName = self.temporaryAllocate()
+            code.append("move {0} r{1}".format(opmrl_op1, self.regDict[tempName])) 
+            opmrl_op1 = "r{0}".format(self.regDict[tempName])
+
         code.append("move {0} {1}".format(opmrl_op1, opmr_op2)) 
         self.tinyCode += "\n".join(code) + "\n"
-        pass
+        return
 
-    def gt(self, IRLine):
+
+
+    def stores(self, IRLine):
         lineSplit = IRLine.split(" ")
         op1 = lineSplit[1]
-        op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        result = lineSplit[2]
+        code  = []
 
-    def ge(self, IRLine):
+
+        code.append("str {0} {1}".format(result, op1))
+        self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
+        return
+
+
+    def compOperand(self, op1, op2):
+        code = []
+        opmrl_op1 = ""
+        opmrl_op2 = ""
+        reg_op2   = ""
+        op1Allocated = False
+        flipped = False
+        isReg1 = False
+        isReg2 = False
+
+        if op1.replace(".", "").replace("-", "").isdigit():
+            opmrl_op1 = op1
+        elif not op1.startswith("$"):
+            opmrl_op1 = op1
+            self.declDict[opmrl_op1] = ""
+        else:
+            opAllocated = self.registerAllocate(op1)
+            opmrl_op1 = "r{0}".format(self.regDict[op1])
+            isReg1 = True
+
+        if op2.replace(".", "").replace("-", "").isdigit():
+            opmrl_op2 = op2
+        elif not op2.startswith("$"):
+            opmrl_op2 = op2
+            self.declDict[opmrl_op2] = ""
+        else:
+            self.registerAllocate(op2)
+            opmrl_op2 = "r{0}".format(self.regDict[op2])
+            isReg2 = True
+
+        if isReg1 and not isReg2:
+            temp = opmrl_op2
+            opmrl_op2 = opmrl_op1
+            opmrl_op1 = temp
+            flipped = True
+        elif not isReg2:
+            opmrl_op2 = self.temporaryAllocate()
+            code.append("move {0} r{1}\n".format(op2, self.regDict[opmrl_op2]))
+            opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
+
+        code.append("cmpr {0} {1}".format(opmrl_op1, opmrl_op2))
+        self.tinyCode += "\n".join(code) + "\n"
+        return flipped
+
+    def comp(self, IRLine):
         lineSplit = IRLine.split(" ")
+        op  = lineSplit[0]
         op1 = lineSplit[1]
         op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        label = lineSplit[3]
+        CompOP = None
+        code = []
 
-    def lt(self, IRLine):
-        lineSplit = IRLine.split(" ")
-        op1 = lineSplit[1]
-        op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        if op == "LT":
+            CompOP = COMPOP.LT
+        elif op == "GT":
+            CompOP = COMPOP.GT
+        elif op == "EQ":
+            CompOP = COMPOP.EQ
+        elif op == "NE":
+            CompOP = COMPOP.NE
+        elif op == "LE":
+            CompOP = COMPOP.LE
+        elif op == "GE":
+            CompOP = COMPOP.GE
 
-    def le(self, IRLine):
-        lineSplit = IRLine.split(" ")
-        op1 = lineSplit[1]
-        op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        flipped = self.compOperand(op1, op2)
+        if flipped:
+            CompOP = COMPOP.inverseOP(CompOP)
 
-    def ne(self, IRLine):
-        lineSplit = IRLine.split(" ")
-        op1 = lineSplit[1]
-        op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        if CompOP == COMPOP.LT:
+            code.append("jlt {0}".format(label))
+        elif CompOP == COMPOP.GT:
+            code.append("jgt {0}".format(label))
+        elif CompOP == COMPOP.EQ:
+            code.append("jeq {0}".format(label))
+        elif CompOP == COMPOP.NE:
+            code.append("jne {0}".format(label))
+        elif CompOP == COMPOP.LE:
+            code.append("jle {0}".format(label))
+        elif CompOP == COMPOP.GE:
+            code.append("jge {0}".format(label))
 
-    def eq(self, IRLine):
-        lineSplit = IRLine.split(" ")
-        op1 = lineSplit[1]
-        op2 = lineSplit[2]
-        result = lineSplit[3]
-        pass
+        self.tinyCode += "\n".join(code) + "\n"
+        return
 
     def jump(self, IRLine):
         lineSplit = IRLine.split(" ")
         label = lineSplit[3]
-        pass
+        return
 
     def label(self, IRLine):
         lineSplit = IRLine.split(" ")
-        result = lineSplit[1]
-        pass
+        label = lineSplit[1]
+        code = []
+
+        code.append("label {0}".format(label))    
+        self.tinyCode += "\n".join(code) + "\n"
+
+        return
 
     def readWriteOperandSetup(self, op2, code):
         opmr_op2 = ""
