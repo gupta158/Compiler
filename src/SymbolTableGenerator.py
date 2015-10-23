@@ -45,15 +45,6 @@ class SymbolTableGenerator(LittleExprListener):
         self.block += 1
         pass
 
-	# Exit a parse tree produced by LittleExprParser#if_stmt.
-    def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
-        # If else does not exist
-        self.ASTStack[-1].generateCode()
-        print(self.ASTStack[-1].code)
-        if ctx.else_part() is not None and ctx.else_part().getText():
-            self.symbolTable.pop()
-        pass
-
 	# Enter a parse tree produced by LittleExprParser#else_part.
     def enterElse_part(self, ctx:LittleExprParser.Else_partContext):
         self.symbolTable.pop()  # Pop if block
@@ -64,6 +55,8 @@ class SymbolTableGenerator(LittleExprListener):
 
 	# Exit a parse tree produced by LittleExprParser#else_part.
     def exitElse_part(self, ctx:LittleExprParser.Else_partContext):
+        if int(ctx.getChildCount()) == 0:
+            return
         self.symbolTable.pop()
         pass
 
@@ -75,10 +68,6 @@ class SymbolTableGenerator(LittleExprListener):
         self.block += 1
         pass
 
-	# Exit a parse tree produced by LittleExprParser#for_stmt.
-    def exitFor_stmt(self, ctx:LittleExprParser.For_stmtContext):
-        self.symbolTable.pop()
-        pass
 
 	# Enter a parse tree produced by LittleExprParser#param_decl_list.
     def enterString_decl(self, ctx:LittleExprParser.Param_decl_listContext):
@@ -121,29 +110,29 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
         self.ASTStack[-1].generateCode()
+        print(self.ASTStack[-1].code)
+        # #Pre Optimized code
+        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        # self.tinyGenerator.generate()
+        # self.printTinyIR(comment = 1)
 
-        #Pre Optimized code
-        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        self.tinyGenerator.generate()
-        self.printTinyIR(comment = 1)
-
-        #Optimized code
-        self.optimizer = Optimizer(self.ASTStack[-1].code)
-        self.ASTStack[-1].code = self.optimizer.optimize()
-        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        self.tinyGenerator.generate()
-        self.printTinyIR()
-        #self.printNewestAST()
+        # #Optimized code
+        # self.optimizer = Optimizer(self.ASTStack[-1].code)
+        # self.ASTStack[-1].code = self.optimizer.optimize()
+        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        # self.tinyGenerator.generate()
+        # self.printTinyIR()
+        # #self.printNewestAST()
         pass
 
    
     # Exit a parse tree produced by LittleExprParser#if_stmt.
     def exitIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
         # If else does not exist
-        if ctx.else_part() is not None and ctx.else_part().getText():
+        if ctx.else_part() is not None and not ctx.else_part().getText():
             self.symbolTable.pop()
-
         ifNode = ASTIf()
+        labelNode = ASTLabel()
 
         
         if ctx.else_part() is not None and ctx.else_part().getText():
@@ -151,23 +140,28 @@ class SymbolTableGenerator(LittleExprListener):
 
         ifNode.ThenNode = self.ASTStack.pop()
         ifNode.CondNode = self.ASTStack.pop()
-        
+        ifNode.ExitLabelNode = labelNode
+
+        ifNode.CondNode.endLabel = labelNode.labelNum
         self.ASTStack.append(ifNode)
-        
-        self.ASTStack[-1].generateCode()
-        print(self.ASTStack[-1].code)
+               
+        pass
+
+
+    # Exit a parse tree produced by LittleExprParser#for_stmt.
+    def exitFor_stmt(self, ctx:LittleExprParser.For_stmtContext):
+        self.symbolTable.pop()
         pass
 
 
     # Exit a parse tree produced by LittleExprParser#cond.
     def exitCond(self, ctx:LittleExprParser.CondContext):
-        print(len(self.ASTStack))
         exprNode2  = self.ASTStack.pop()
         compopNode = self.ASTStack.pop()
         exprNode1  = self.ASTStack.pop()
 
         compopNode.Left = exprNode1
-        compopNode.RIght = exprNode2
+        compopNode.Right = exprNode2
         self.ASTStack.append(compopNode)
         pass
 

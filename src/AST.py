@@ -270,7 +270,7 @@ class ASTIf(AST):
 		super().__init__("IF", nodeType, LRType, code, tempReg)
 
 	def printNodeInfo(self):
-		print("IF, opcode = {0}, LRType = {1}, type={2} \n".format(self.opcode, self.LRType, self.nodeType))
+		print("IF, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
 
 	def generateCode(self):
 		condCode	  = ""
@@ -285,26 +285,56 @@ class ASTIf(AST):
 		if self.ElseNode is not None:
 			elseCode = self.ElseNode.generateCode()
 		if self.ExitLabelNode is not None:
-			elseCode = self.ExitLabelNode.generateCode()
+			exitLabelCode = self.ExitLabelNode.generateCode()
 
 		return self.generateSelfCode(condCode, thenCode, elseCode, exitLabelCode)
 
 	def generateSelfCode(self, condCode, thenCode, elseCode, exitLabelCode):
-		pass
+		newCode = condCode 		
+
+		self.code = condCode + thenCode + exitLabelCode + elseCode
+		return self.code
+
+
+	def printInOrder(self):
+		if self.CondNode is not None:
+			print("<condNode>")
+			self.CondNode.printInOrder()
+			print("</condNode>")
+
+		print("<node>")
+		self.printNodeInfo()
+		print("</node>")
+
+		if self.ThenNode is not None:
+			print("<thenNode>")
+			self.ThenNode.printInOrder()
+			print("</thenNode>")
+
+		if self.ExitLabelNode is not None:
+			print("<exitLabelNode>")
+			self.ExitLabelNode.printInOrder()
+			print("</exitLabelNode>")
+
+		if self.ElseNode is not None:
+			print("<elseNode>")
+			self.ElseNode.printInOrder()
+			print("</elseNode>")
+		return
 
 
 class ASTLabel(AST):	
 
 	def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
 		super().__init__(value="LABEL", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+		self.labelNum = AST.codeLabelNum
+		AST.codeLabelNum += 1
 
 	def printNodeInfo(self):
-		print("LABEL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+		print("LABEL, value = {0}, LRType = {1}, type={2}, labelNum = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelNum))
 
 	def generateSelfCode(self, lCode, rCode):
-		self.code = lCode
-		if self.Right is not None:
-			self.code = self.code + rCode
+		self.code = "LABEL LABEL{0} \n".format(self.labelNum)
 		return self.code
 
 
