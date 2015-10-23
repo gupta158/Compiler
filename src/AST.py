@@ -189,6 +189,8 @@ class ASTWrite(AST):
             self.code = "WRITEI {0} \n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
             self.code = "WRITEF {0} \n".format(self.Left.tempReg)
+        elif(self.Left.nodeType == NODETYPE.STRINGLITERAL):
+            self.code = "WRITES {0} \n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
         return self.code
@@ -211,7 +213,6 @@ class ASTRead(AST):
         return self.code
 
 
-# Conditions
 class ASTCond(AST):
     def __init__(self, opcode, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
         self.opcode = opcode
@@ -430,7 +431,6 @@ class ASTFor(AST):
         return
 
 
-
 class ASTLabel(AST):    
 
     def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
@@ -469,6 +469,7 @@ class COMPOP(Enum):
             return COMPOP.LT
         pass
 
+
 class MATHOP(Enum):
     ADD     = 1
     SUB     = 2
@@ -479,6 +480,7 @@ class MATHOP(Enum):
 class LRTYPE(Enum):
     LTYPE   = 1
     RTYPE   = 2
+
 
 class NODETYPE(Enum):
     INTLITERAL      = 1

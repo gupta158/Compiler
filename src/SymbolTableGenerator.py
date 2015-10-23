@@ -157,12 +157,7 @@ class SymbolTableGenerator(LittleExprListener):
 
         forNode.setupNode()
         self.ASTStack.append(forNode)
-        self.ASTStack[-1].generateCode()
-        #self.printNewestAST()
-        print(self.ASTStack[-1].code)
-        input()
-                   
-        pass
+        return
 
 
     # Exit a parse tree produced by LittleExprParser#cond.
@@ -257,9 +252,7 @@ class SymbolTableGenerator(LittleExprListener):
         assignNode.Left = self.CreateIdentifierNode(identifierNode)
         assignNode.Right = exprNode
         self.ASTStack.append(assignNode)
-        #self.printNewestAST()
-        #print(self.ASTStack[-1].generateCode())
-        pass
+        return
 
     # Exit a parse tree produced by LittleExprParser#expr.
     def exitExpr(self, ctx:LittleExprParser.ExprContext):
@@ -361,12 +354,19 @@ class SymbolTableGenerator(LittleExprListener):
         identifier = ctx.getChild(0).getText()
         identifierSymbol = self.GetSymbolFromSymbolTable(identifier)
         identifierType = ""
+        value = ""
+
         if identifierSymbol[0] == "INT":
             identifierType = NODETYPE.INTLITERAL
+            value = identifier
         elif identifierSymbol[0] == "FLOAT":
             identifierType = NODETYPE.FLOATLITERAL
+            value = identifier
+        elif identifierSymbol[0] == "STRING":
+            identifierType = NODETYPE.STRINGLITERAL
+            value = identifierSymbol[1]
 
-        astNode = AST(value=identifier, LRType=LRTYPE.LTYPE, nodeType=identifierType, tempReg=identifier)
+        astNode = AST(value=value, LRType=LRTYPE.LTYPE, nodeType=identifierType, tempReg=value)
         return astNode
 
     # Create INTLITERAL Node
