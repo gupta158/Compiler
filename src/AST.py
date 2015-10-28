@@ -193,7 +193,7 @@ class ASTWrite(AST):
             self.code = "WRITEF {0} \n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.STRINGLITERAL):
             if self.addStore:
-                self.code = "STORES {0} {1} \n".format(self.stringLiteral, self.Left.tempReg)
+                self.code = "STORES {0} {1}\n".format(self.stringLiteral, self.Left.tempReg)
             self.code += "WRITES {0} \n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
@@ -249,18 +249,33 @@ class ASTCond(AST):
         else:
             self.nodeType = NODETYPE.INTLITERAL
 
-        if(self.opcode == COMPOP.LT):
-            newCode = "LT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.GT):
-            newCode = "GT {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.EQ):
-            newCode = "EQ {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.NE):
-            newCode = "NE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.LE):
-            newCode = "LE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
-        elif(self.opcode == COMPOP.GE):
-            newCode = "GE {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        if(self.Left.nodeType == NODETYPE.INTLITERAL):
+            if(self.opcode == COMPOP.LT):
+                newCode = "LTI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.GT):
+                newCode = "GTI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.EQ):
+                newCode = "EQI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.NE):
+                newCode = "NEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.LE):
+                newCode = "LEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.GE):
+                newCode = "GEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+        else:
+            if(self.opcode == COMPOP.LT):
+                newCode = "LTF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.GT):
+                newCode = "GTF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.EQ):
+                newCode = "EQF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.NE):
+                newCode = "NEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.LE):
+                newCode = "LEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+            elif(self.opcode == COMPOP.GE):
+                newCode = "GEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+
 
         self.code = lCode + rCode + newCode
         return self.code
