@@ -14,11 +14,11 @@ class Optimizer():
     def optimize(self):
         lines = self.IRcode.rstrip().split("\n")
         IRLines = self.CreateLineObjects(lines)
-        IRLines = self.checkConstants(IRLines)
-        self.markLines(IRLines)
-        IRLines = self.simplifyMoves(IRLines)
+        # IRLines = self.checkConstants(IRLines)
+        # self.markLines(IRLines)
+        # IRLines = self.simplifyMoves(IRLines)
         IRLines = self.mapMemoryToRegisters(IRLines)
-        IRLines = self.reduceRegisters(IRLines)
+        # IRLines = self.reduceRegisters(IRLines)
 
         #self.printRegs()
         #print(self.createNewIR(IRLines))
@@ -27,16 +27,47 @@ class Optimizer():
 
     def mapMemoryToRegisters(self, IRLines):
         newIRLines = []
-        ignoreOPS = ["STORES", "WRITES"]
+        ignoreOPS = ["STORES", "WRITES", "JUMP", "LABEL"]
+        compOPS = ["GEI", "GEF", "LEI", "LEF", "EQI", "EQF", "GTI", "GTF", "NEI", "NEF", "LTI", "LTF"]
+
+        varDict = {}
+        maxTValue = -1
+        for IRLine in IRLines:
+            if IRLine.op in ignoreOPS:
+                continue
+            
+            lastOp = len(IRLine.lineSplit) if IRLine.op not in compOPS else 3
+            for i in range(1, lastOp):
+                if IRLine.lineSplit[i].replace(".", "").replace("-", "").isdigit():
+                    continue
+                if IRLine.lineSplit[i].startswith("$"):
+                    tValue = int(IRLine.lineSplit[i].split("$")[1][1:])
+                    if tValue > maxTValue:
+                        maxTValue = tValue
+
+                    continue
+                varDict[IRLine.lineSplit[i]] = ""
+
+        for key in varDict.keys():
+            varDict[key] = "$T" + str(maxTValue + 1)
+            maxTValue    += 1
 
         for IRLine in IRLines:
-            if IRLine.op in stringOP:
+            if IRLine.op in ignoreOPS:
+                newIRLines.append(IRLine)
                 continue
-            lineSplit = IRLine.rstrip().split(" ")
-            for i in range(1, len(lineSplit)):
+            
+            lastOp = len(IRLine.lineSplit) if IRLine.op not in compOPS else 3
+            for i in range(1, lastOp):
+                if IRLine.lineSplit[i].replace(".", "").replace("-", "").isdigit():
+                    continue
+                if IRLine.lineSplit[i].startswith("$"):
+                    continue
+                IRLine.lineSplit[i] = varDict[IRLine.lineSplit[i]]
+            IRLine.line = " ".join(IRLine.lineSplit)
+            newIRLines.append(IRLine)
 
-
-        return newIRLines
+        return IRLines
 
     def CreateLineObjects(self, lines):
         IRLines = []
@@ -222,18 +253,18 @@ class Optimizer():
 
 
     def CSE(self, IRLines):
-        newIRLines = []
-        Mathops = ["ADDI", "SUBI", "MULTI", "DIVI", "ADDF", "SUBF", "MULTF", "DIVF"]
-        ASSop = ["ADDI", "MULTI"]
-        knownResults = {}
-        for IRLine in IRLines:
-            if IRLine.op in Mathops:
-                if IRLine.op in ASSop:
-                    opperands = [IRLine.]
-                    operation = (IRLine.op, IRLine)
-                pass
-            else:
-                newIRLines.append(IRLine)
+        # newIRLines = []
+        # Mathops = ["ADDI", "SUBI", "MULTI", "DIVI", "ADDF", "SUBF", "MULTF", "DIVF"]
+        # ASSop = ["ADDI", "MULTI"]
+        # knownResults = {}
+        # for IRLine in IRLines:
+        #     if IRLine.op in Mathops:
+        #         if IRLine.op in ASSop:
+        #             opperands = [IRLine.]
+        #             operation = (IRLine.op, IRLine)
+        #         pass
+        #     else:
+        #         newIRLines.append(IRLine)
         return newIRLines
 
 
@@ -258,8 +289,8 @@ class IRLine():
 
     def assignVariables(self):
         self.lineSplit = self.line.rstrip().split(" ")
-        self.op = lineSplit[0]
-        for i in lineSplit:
+        self.op = self.lineSplit[0]
+        for i in self.lineSplit:
             if i.startswith("$"):
                 self.Regs.append(i)
 
