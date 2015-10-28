@@ -116,7 +116,7 @@ class SymbolTableGenerator(LittleExprListener):
         # #Pre Optimized code
         self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
         self.tinyGenerator.generate()
-        self.printTinyIR(comment = 1)
+        # self.printTinyIR(comment = 1)
 
         # #Optimized code
         # self.optimizer = Optimizer(self.ASTStack[-1].code)
@@ -133,8 +133,9 @@ class SymbolTableGenerator(LittleExprListener):
         ifNode = ASTIf()        
         
         # If else does not exist
-        if ctx.else_part() is not None and ctx.else_part().getText():
+        if ctx.else_part() is None and not ctx.else_part().getText():
             self.symbolTable.pop()
+        elif ctx.else_part() is not None and ctx.else_part().getText():
             ifNode.ElseNode = self.ASTStack.pop()
 
         ifNode.ThenNode = self.ASTStack.pop()
