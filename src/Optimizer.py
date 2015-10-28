@@ -208,6 +208,20 @@ class Optimizer():
         return newIRLines
 
 
+    def CSE(self, IRLines):
+        newIRLines = []
+        Mathops = ["ADDI", "SUBI", "MULTI", "DIVI", "ADDF", "SUBF", "MULTF", "DIVF"]
+        ASSop = ["ADDI", "MULTI"]
+        knownResults = {}
+        for IRLine in IRLines:
+            if IRLine.op in Mathops:
+                if IRLine.op in ASSop:
+                    opperands = [IRLine.]
+                    operation = (IRLine.op, IRLine)
+                pass
+            else:
+                newIRLines.append(IRLine)
+        return newIRLines
 
 
 
@@ -230,9 +244,9 @@ class IRLine():
         self.lineNum = lineNum
 
     def assignVariables(self):
-        opSplit = self.line.rstrip().split(" ")
-        self.op = opSplit[0]
-        for i in opSplit:
+        self.lineSplit = self.line.rstrip().split(" ")
+        self.op = lineSplit[0]
+        for i in lineSplit:
             if i.startswith("$"):
                 self.Regs.append(i)
 
