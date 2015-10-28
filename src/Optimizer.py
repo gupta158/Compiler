@@ -14,11 +14,16 @@ class Optimizer():
     def optimize(self):
         lines = self.IRcode.rstrip().split("\n")
         IRLines = self.CreateLineObjects(lines)
-        # IRLines = self.checkConstants(IRLines)
-        # self.markLines(IRLines)
-        # IRLines = self.simplifyMoves(IRLines)
+        IRLines = self.checkConstants(IRLines)
+
+        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        IRLines = self.simplifyMoves(IRLines)
+
+        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        IRLines = self.reduceRegisters(IRLines)
+        
+        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
         IRLines = self.mapMemoryToRegisters(IRLines)
-        # IRLines = self.reduceRegisters(IRLines)
 
         #self.printRegs()
         #print(self.createNewIR(IRLines))
