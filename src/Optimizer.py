@@ -17,8 +17,7 @@ class Optimizer():
         IRLines = self.checkConstants(IRLines)
         self.markLines(IRLines)
         IRLines = self.simplifyMoves(IRLines)
-        self.Regs = {}
-        self.markLines(IRLines)
+        IRLines = self.mapMemoryToRegisters(IRLines)
         IRLines = self.reduceRegisters(IRLines)
 
         #self.printRegs()
@@ -26,6 +25,18 @@ class Optimizer():
 
         return self.createNewIR(IRLines)
 
+    def mapMemoryToRegisters(self, IRLines):
+        newIRLines = []
+        ignoreOPS = ["STORES", "WRITES"]
+
+        for IRLine in IRLines:
+            if IRLine.op in stringOP:
+                continue
+            lineSplit = IRLine.rstrip().split(" ")
+            for i in range(1, len(lineSplit)):
+
+
+        return newIRLines
 
     def CreateLineObjects(self, lines):
         IRLines = []
@@ -43,6 +54,8 @@ class Optimizer():
                 self.Regs[reg].lastUsed = IRline.lineNum
 
     def reduceRegisters(self, IRLines):
+        self.Regs = {}
+        self.markLines(IRLines)
         mappingDict = {}
         recycledRegisters = []
         for IRLine in IRLines:
