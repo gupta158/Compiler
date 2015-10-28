@@ -126,11 +126,24 @@ class Optimizer():
 
         newIRLines = []
         regConstantDict = {}
+        oldLineisComp = False
+        isLoop = False
+        oldLabel = ""
         for IRLine in IRLines:
             newIRLines.append(IRLine)
             regArray = IRLine.Regs
             isStore = IRLine.op in ["STOREI", "STOREF"]
             isRead  = IRLine.op in ["READI", "READF"]
+
+            if isLoop:
+                if IRLine.op == "LABEL" and IRLine.line.split(" ")[1] == oldLabel:
+                    isLoop = False
+                continue
+
+            if oldLineisComp and IRLine.op == "LABEL":
+                isLoop = True
+                oldLineisComp = False
+                continue
 
             splitline = IRLine.line.split(" ")
             if isStore:
@@ -185,6 +198,9 @@ class Optimizer():
                     if isMath:
                         invalidate(splitline[3])
 
+            oldLineisComp = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] 
+            oldLabel = IRLine.line.split(' ')[3] if oldLineisComp else ""
+ 
         for line in newIRLines:
             #print(line.line)
             pass
