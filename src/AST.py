@@ -187,6 +187,7 @@ class ASTWrite(AST):
         print("WRITE, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
 
     def generateSelfCode(self, lCode, rCode):
+        self.code = ""
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
             self.code = "WRITEI {0} \n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
@@ -194,6 +195,7 @@ class ASTWrite(AST):
         elif(self.Left.nodeType == NODETYPE.STRINGLITERAL):
             if self.addStore:
                 self.code = "STORES {0} {1}\n".format(self.stringLiteral, self.Left.tempReg)
+
             self.code += "WRITES {0} \n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
@@ -286,13 +288,19 @@ class ASTIf(AST):
         self.CondNode      = None
         self.ThenNode      = None
         self.ElseNode      = None
+        self.ElseLabelNode = None
+        self.JumpNode      = None
 
         super().__init__("IF", nodeType, LRType, code, tempReg)
 
     def setupNode(self):
         self.ExitLabelNode = ASTLabel()
         self.CondNode.endLabel = self.ExitLabelNode.labelNum
-
+        if self.ElseNode is not None:
+            self.ElseLabelNode = ASTLabel()
+            self.CondNode.endLabel = self.ElseLabelNode.labelNum
+            self.JumpNode = ASTJump()
+            self.JumpNode.labelNum = self.ExitLabelNode.labelNum
 
     def printNodeInfo(self):
         print("IF, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
@@ -302,22 +310,28 @@ class ASTIf(AST):
         thenCode      = ""
         elseCode      = ""
         exitLabelCode = ""
+        elseLabelCode = ""
+        jumpCode      = ""
 
         if self.CondNode is not None:
             condCode = self.CondNode.generateCode()
+        if self.JumpNode is not None:
+            jumpCode = self.JumpNode.generateCode()
         if self.ThenNode is not None:
             thenCode = self.ThenNode.generateCode() 
+        if self.ElseLabelNode is not None:
+            elseLabelCode = self.ElseLabelNode.generateCode()
         if self.ElseNode is not None:
             elseCode = self.ElseNode.generateCode()
         if self.ExitLabelNode is not None:
             exitLabelCode = self.ExitLabelNode.generateCode()
 
-        return self.generateSelfCode(condCode, thenCode, elseCode, exitLabelCode)
+        return self.generateSelfCode(condCode, thenCode, jumpCode, elseLabelCode, elseCode, exitLabelCode)
 
-    def generateSelfCode(self, condCode, thenCode, elseCode, exitLabelCode):
+    def generateSelfCode(self, condCode, thenCode, jumpCode, elseLabelCode, elseCode, exitLabelCode):
         newCode = condCode      
 
-        self.code = condCode + thenCode + exitLabelCode + elseCode
+        self.code = condCode + thenCode + jumpCode + elseLabelCode + elseCode + exitLabelCode
         return self.code
 
 
@@ -462,6 +476,20 @@ class ASTLabel(AST):
     def generateSelfCode(self, lCode, rCode):
         self.code = "LABEL LABEL{0} \n".format(self.labelNum)
         return self.code
+
+class ASTJump(AST):    
+
+    def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        super().__init__(value="JUMP", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+        self.labelNum = -1
+
+    def printNodeInfo(self):
+        print("JUMP, value = {0}, LRType = {1}, type={2}, labelNum = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelNum ))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = "JUMP LABEL{0} \n".format(self.labelNum)
+        return self.code
+
 
 
 class COMPOP(Enum):

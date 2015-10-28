@@ -110,6 +110,7 @@ class SymbolTableGenerator(LittleExprListener):
                 
     # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
+        # self.printNewestAST()
         self.ASTStack[-1].generateCode()
         #print(self.ASTStack[-1].code)
         # #Pre Optimized code

@@ -317,7 +317,7 @@ class TinyGenerator():
             flipped = True
         elif not isReg2:
             opmrl_op2 = self.temporaryAllocate()
-            code.append("move {0} r{1}\n".format(op2, self.regDict[opmrl_op2]))
+            code.append("move {0} r{1}".format(op2, self.regDict[opmrl_op2]))
             opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
 
         if dataType:
@@ -373,9 +373,14 @@ class TinyGenerator():
 
     def jump(self, IRLine):
         lineSplit = IRLine.split(" ")
-        label = lineSplit[3]
-        return
+        label = lineSplit[1]
+        code = []
 
+        code.append("jmp {0}".format(label))    
+        self.tinyCode += "\n".join(code) + "\n"
+
+        return
+        
     def label(self, IRLine):
         lineSplit = IRLine.split(" ")
         label = lineSplit[1]
