@@ -23,7 +23,12 @@ class Optimizer():
         IRLines = self.reduceRegisters(IRLines)
         
         IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        
+        IRLines = self.CSE(IRLines)
+        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        
         IRLines = self.mapMemoryToRegisters(IRLines)
+
 
         #self.printRegs()
         #print(self.createNewIR(IRLines))
@@ -78,7 +83,7 @@ class Optimizer():
         IRLines = []
         count = 0
         for line in lines:
-            IRLines.append(IRLine(line, count))
+            IRLines.append(IRLineObject(line, count))
             count += 1
         return IRLines
 
@@ -258,20 +263,47 @@ class Optimizer():
 
 
     def CSE(self, IRLines):
-        # newIRLines = []
-        # Mathops = ["ADDI", "SUBI", "MULTI", "DIVI", "ADDF", "SUBF", "MULTF", "DIVF"]
-        # ASSop = ["ADDI", "MULTI"]
-        # knownResults = {}
-        # for IRLine in IRLines:
-        #     if IRLine.op in Mathops:
-        #         if IRLine.op in ASSop:
-        #             opperands = [IRLine.]
-        #             operation = (IRLine.op, IRLine)
-        #         pass
-        #     else:
-        #         newIRLines.append(IRLine)
-        return newIRLines
+        def removeResult(result):
+            keysToPop = []
+            for key in knownResults.keys():
+                if result == key[1] or result == key[2]:
+                    keysToPop.append(key)
+            for key in keysToPop:
+                knownResults.pop(key)
 
+            pass
+
+        newIRLines = []
+        Mathops = ["ADDI", "SUBI", "MULTI", "DIVI", "ADDF", "SUBF", "MULTF", "DIVF"]
+        ASSop = ["ADDI", "MULTI"]
+        storer = ["STOREI", "STOREF"]
+        reader = ["READI", "READF"]
+        knownResults = {}
+
+        for IRLine in IRLines:
+            if IRLine.op in Mathops:
+                #check if can be replaced with store ellse add it to the list
+                opperands = [IRLine.lineSplit[1], IRLine.lineSplit[2]]
+                if IRLine.op in ASSop:
+                    opperands.sort()
+                operation = (IRLine.op, opperands[0], opperands[1])
+
+                if operation in knownResults.keys():
+                    newLine = "STORE{0} {1} {2}".format(IRLine.op[-1], knownResults[operation], IRLine.lineSplit[3])
+                    newIRLine = IRLineObject(newLine, IRLine.lineNum)
+                    newIRLines.append(newIRLine)
+                else:
+                    knownResults[operation] = IRLine.lineSplit[3]
+                    newIRLines.append(IRLine)
+
+                removeResult(IRLine.lineSplit[3])
+            elif IRLine.op in storer:
+                removeResult(IRLine.lineSplit[2])
+            elif IRLine.op in reader:
+                removeResult(IRLine.lineSplit[1])
+            else:
+                newIRLines.append(IRLine)
+        return newIRLines
 
 
 class Register():
@@ -282,7 +314,7 @@ class Register():
         self.lastUsed = lastUsed
 
 
-class IRLine():
+class IRLineObject():
 
     def __init__(self, line, lineNum):
         self.line = line
