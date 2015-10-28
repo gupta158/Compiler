@@ -31,12 +31,18 @@ class TinyGenerator():
                 "STOREI": self.storei,
                 "STOREF": self.storei,
                 "STORES": self.stores,
-                "GT": self.comp,
-                "GE": self.comp,
-                "LT": self.comp,
-                "LE": self.comp,
-                "NE": self.comp,
-                "EQ": self.comp,
+                "GTI": self.comp,
+                "GEI": self.comp,
+                "LTI": self.comp,
+                "LEI": self.comp,
+                "NEI": self.comp,
+                "EQI": self.comp,
+                "GTF": self.comp,
+                "GEF": self.comp,
+                "LTF": self.comp,
+                "LEF": self.comp,
+                "NEF": self.comp,
+                "EQF": self.comp,
                 "JUMP": self.jump,
                 "LABEL": self.label,
                 "READI": self.readi,
@@ -264,17 +270,17 @@ class TinyGenerator():
 
     def stores(self, IRLine):
         lineSplit = IRLine.split(" ")
-        op1 = lineSplit[1]
-        result = lineSplit[2]
+        # op1 = lineSplit[1]
+        result = " ".join(lineSplit[1:-1])
+        op1 = lineSplit[-1]
         code  = []
 
-
-        code.append("str {0} {1}".format(result, op1))
+        code.append("str {0} {1}".format(op1, result))
         self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
         return
 
 
-    def compOperand(self, op1, op2):
+    def compOperand(self, op1, op2, dataType):
         code = []
         opmrl_op1 = ""
         opmrl_op2 = ""
@@ -314,7 +320,12 @@ class TinyGenerator():
             code.append("move {0} r{1}\n".format(op2, self.regDict[opmrl_op2]))
             opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
 
-        code.append("cmpr {0} {1}".format(opmrl_op1, opmrl_op2))
+        if dataType:
+            code.append("cmpi {0} {1}".format(opmrl_op1, opmrl_op2))
+        else:
+            code.append("cmpr {0} {1}".format(opmrl_op1, opmrl_op2))
+    
+
         self.tinyCode += "\n".join(code) + "\n"
         return flipped
 
@@ -327,20 +338,20 @@ class TinyGenerator():
         CompOP = None
         code = []
 
-        if op == "LT":
+        if op in ["LTI", "LTF"]:
             CompOP = COMPOP.LT
-        elif op == "GT":
+        elif op in ["GTI","GTF"]:
             CompOP = COMPOP.GT
-        elif op == "EQ":
+        elif op in ["EQI","EQF"]:
             CompOP = COMPOP.EQ
-        elif op == "NE":
+        elif op in ["NEI","NEF"]:
             CompOP = COMPOP.NE
-        elif op == "LE":
+        elif op in ["LEI","LEF"]:
             CompOP = COMPOP.LE
-        elif op == "GE":
+        elif op in ["GEI","GEF"]:
             CompOP = COMPOP.GE
 
-        flipped = self.compOperand(op1, op2)
+        flipped = self.compOperand(op1, op2, op.endswith("I"))
         if flipped:
             CompOP = COMPOP.inverseOP(CompOP)
 

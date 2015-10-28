@@ -113,15 +113,15 @@ class SymbolTableGenerator(LittleExprListener):
         self.ASTStack[-1].generateCode()
         #print(self.ASTStack[-1].code)
         # #Pre Optimized code
-        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        # self.tinyGenerator.generate()
-        # self.printTinyIR(comment = 1)
+        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        self.tinyGenerator.generate()
+        self.printTinyIR(comment = 1)
 
         # #Optimized code
         # self.optimizer = Optimizer(self.ASTStack[-1].code)
         # self.ASTStack[-1].code = self.optimizer.optimize()
-        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        self.tinyGenerator.generate()
+        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        # self.tinyGenerator.generate()
         self.printTinyIR()
         #self.printNewestAST()
         pass
