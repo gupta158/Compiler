@@ -14,24 +14,28 @@ class Optimizer():
     def optimize(self):
         lines = self.IRcode.rstrip().split("\n")
         IRLines = self.CreateLineObjects(lines)
-        IRLines = self.checkConstants(IRLines)
 
-        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        IRLines = self.simplifyMoves(IRLines)
+        while 1:
+            oldIR = self.createNewIR(IRLines)
+            IRLines = self.checkConstants(IRLines)
+            
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.reduceRegisters(IRLines)
+            
+            # print(self.createNewIR(IRLines))
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.CSE(IRLines)
+            # print(self.createNewIR(IRLines))
 
-        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        IRLines = self.reduceRegisters(IRLines)
-        
-        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        
-        IRLines = self.CSE(IRLines)
-        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        
-        IRLines = self.mapMemoryToRegisters(IRLines)
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.simplifyMoves(IRLines)
 
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.mapMemoryToRegisters(IRLines)
 
-        #self.printRegs()
-        #print(self.createNewIR(IRLines))
+            # if self.createNewIR(IRLines) == oldIR:
+            break   
+
 
         return self.createNewIR(IRLines)
 
@@ -299,8 +303,10 @@ class Optimizer():
                 removeResult(IRLine.lineSplit[3])
             elif IRLine.op in storer:
                 removeResult(IRLine.lineSplit[2])
+                newIRLines.append(IRLine)
             elif IRLine.op in reader:
                 removeResult(IRLine.lineSplit[1])
+                newIRLines.append(IRLine)
             else:
                 newIRLines.append(IRLine)
         return newIRLines
