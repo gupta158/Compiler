@@ -22,19 +22,16 @@ class Optimizer():
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.reduceRegisters(IRLines)
             
-            # print(self.createNewIR(IRLines))
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.CSE(IRLines)
-            # print(self.createNewIR(IRLines))
-
+            
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.simplifyMoves(IRLines)
-
+            
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.mapMemoryToRegisters(IRLines)
-
-            # if self.createNewIR(IRLines) == oldIR:
-            break   
+            if self.createNewIR(IRLines) == oldIR:
+                break   
 
 
         return self.createNewIR(IRLines)
@@ -142,10 +139,12 @@ class Optimizer():
         linenum = 0 
         lastlinesplit = []
         for line in IRLines:
-            splitline = line.line.split(" ")
-            lineIsMove = "STOREI" in splitline[0] or "STOREF" in splitline[0]
-            if lastWasMove and lineIsMove and splitline[-3].startswith("$") and lastlinesplit[-2] == splitline[-3]:
-                simpIRLines[-1].removeTemp(splitline[-3], splitline[-2])
+            #splitline = line.line.split(" ")
+            lineIsMove = line.op in ["STOREI", "STOREF"]
+            if lineIsMove and line.lineSplit[1] == line.lineSplit[2]:
+                continue
+            if lastWasMove and lineIsMove and line.lineSplit[1].startswith("$") and lastlinesplit[2] == line.lineSplit[1]:
+                simpIRLines[-1].removeTemp(line.lineSplit[1], line.lineSplit[2])
                 #simpIRLines.append(line)
             else:
                 simpIRLines.append(line)
@@ -153,7 +152,7 @@ class Optimizer():
                 linenum += 1
 
             lastWasMove = lineIsMove
-            lastlinesplit = splitline
+            lastlinesplit = line.lineSplit
             #print(lastWasMove)
         return simpIRLines
 
@@ -344,6 +343,8 @@ class IRLineObject():
         self.Regs = [x if (x != reg) else newReg for x in self.Regs]
 
     def removeTemp(self, reg, replacement):
-        self.line = self.line.replace(reg, replacement)
+        self.lineSplit[2] = replacement
+        self.line = " ".join(self.lineSplit)
+        # self.line = self.line.replace(reg, replacement)
         self.Regs.remove(reg)
 
