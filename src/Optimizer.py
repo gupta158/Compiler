@@ -17,24 +17,82 @@ class Optimizer():
 
         while 1:
             oldIR = self.createNewIR(IRLines)
-            IRLines = self.checkConstants(IRLines)
-            
+
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.reduceRegisters(IRLines)
-            
+            IRLines = self.mapMemoryToRegisters(IRLines)
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.checkConstants(IRLines)
+
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.CSE(IRLines)
             
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.simplifyMoves(IRLines)
-            
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.mapMemoryToRegisters(IRLines)
+
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            IRLines = self.reuseRegisters(IRLines)
+                        
             if self.createNewIR(IRLines) == oldIR:
                 break   
 
 
+        # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        # print(self.createNewIR(IRLines))
+        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        IRLines = self.reduceRegisters(IRLines)
+        # print(";After reduce")
+        # print(self.createNewIR(IRLines))
+        
+
         return self.createNewIR(IRLines)
+
+    def reuseRegisters(self, IRLines):
+        def checkLastUsed():
+            reg1 = IRLine.lineSplit[1]
+            if reg1.startswith("$") and self.Regs[reg1].lastUsed == IRLine.lineNum:
+                return True
+            return False
+
+        self.Regs = {}
+        self.markLines(IRLines)
+        mappingDict = {}
+        recycledRegisters = []
+        newIRLines = []
+        for IRLine in IRLines:
+            isStore     = IRLine.lineNum and IRLine.op in ["STOREI", "STOREF"]
+            if isStore and checkLastUsed() and IRLine.lineSplit[2].startswith("$"):
+                reg1 = IRLine.lineSplit[1]
+                if reg1 in mappingDict.keys():
+                    regresult   = IRLine.lineSplit[2]
+                    mappingDict[regresult] = mappingDict[reg1]
+                else:
+                    reg1 = IRLine.lineSplit[1]
+                    regresult   = IRLine.lineSplit[2]
+                    mappingDict[regresult] = reg1
+            else: 
+                regArray = IRLine.Regs
+                for reg in regArray:
+                    if reg in mappingDict.keys():
+                        IRLine.updateLine(reg, mappingDict[reg])
+                newIRLines.append(IRLine)
+                # if self.Regs[reg].firstUsed == IRLine.lineNum:
+                #     if len(recycledRegisters) != 0:
+                #         mappingDict[reg] = recycledRegisters.pop()
+
+                # elif self.Regs[reg].lastUsed == IRLine.lineNum:
+                #     if reg in mappingDict.keys():
+                #         recycledRegisters.append(mappingDict[reg])
+                #     else:
+                #         recycledRegisters.append(reg)
+
+                # if reg in mappingDict.keys():
+                #     IRLine.updateLine(reg, mappingDict[reg])
+                #print("----------------------------------------------------------------------")
+                #print(mappingDict)
+                #print(IRLine.line)
+                #print(recycledRegisters)
+                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return newIRLines
 
     def mapMemoryToRegisters(self, IRLines):
         newIRLines = []
@@ -102,34 +160,33 @@ class Optimizer():
         recycledRegisters = []
         for IRLine in IRLines:
             regArray = IRLine.Regs
+            popRegs = []
+            # print("NEWLINE")
+            # print(" ".join(IRLine.lineSplit))
+            # print(regArray)
             for reg in regArray:
-                #print("----------------------------------------------------------------------")
-                #print(mappingDict)
-                #print(IRLine.line)
-                #print(IRLine.lineNum)
-                #print(self.Regs[reg].firstUsed)
-                #print(reg)
-                #print(self.Regs[reg].lastUsed)
-                #print(recycledRegisters)
-                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                # print("firstUsed = {0}, lastUsed = {1}, lineNum = {2}, reg = {3}".format(self.Regs[reg].firstUsed, self.Regs[reg].lastUsed, IRLine.lineNum, reg))
                 if self.Regs[reg].firstUsed == IRLine.lineNum:
                     if len(recycledRegisters) != 0:
                         mappingDict[reg] = recycledRegisters.pop()
-                        #self.Regs[mappingDict[reg]].lastUsed = self.Regs[reg].lastUsed 
-
+ 
                 elif self.Regs[reg].lastUsed == IRLine.lineNum:
+                    recyledRegToAppend = reg
                     if reg in mappingDict.keys():
-                        recycledRegisters.append(mappingDict[reg])
-                    else:
-                        recycledRegisters.append(reg)
+                        recyledRegToAppend = mappingDict[reg]
+                        popRegs.append(reg)
 
+                    if recyledRegToAppend not in recycledRegisters:
+                        recycledRegisters.append(recyledRegToAppend)
                 if reg in mappingDict.keys():
                     IRLine.updateLine(reg, mappingDict[reg])
-                #print("----------------------------------------------------------------------")
-                #print(mappingDict)
-                #print(IRLine.line)
-                #print(recycledRegisters)
-                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            for reg in set(popRegs):
+                mappingDict.pop(reg)
+
+            # print("MAP")
+            # print(mappingDict)
+            # print("RECYCLED")
+            # print(recycledRegisters)
         return IRLines
 
 
