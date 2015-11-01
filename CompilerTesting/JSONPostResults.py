@@ -4,7 +4,9 @@ import os
 import re
 import time
 import json
-import requests
+import urllib.request
+
+from Utility import *
 
 class JSONPostResults():
     def __init__(self, userName, currentDate):
@@ -25,16 +27,11 @@ class JSONPostResults():
                         "datetime": self.currentDate,
                         "tests"   : self.tests  
                     }
-        print(jsonPost)
-        client = requests.session()
-
-        # Retrieve the CSRF token first
-        url = "https://tinytest.herokuapp.com/api/"        
-        #client.get(url)  # sets cookie
-        #csrftoken = client.cookies['csrf']
-        #data_json = json.dumps(jsonPost)
+               
         headers = {'Content-Type': 'application/json'}
-        r = requests.post(url, data=json.dumps(jsonPost), headers=headers)
-        print(r)
-        print(json.dumps(r.json(), indent=4))
+        req = urllib.request.Request(Utility.APIURL, data=json.dumps(jsonPost).encode('utf8'), headers=headers)
+        response = urllib.request.urlopen(req)
+        responseStr = (response.read().decode('utf8'))
+        if responseStr != "noice":
+            print(colors.RED +  "FAILED to post data" + colors.ENDC)
         return
