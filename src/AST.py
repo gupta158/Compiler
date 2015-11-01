@@ -78,11 +78,11 @@ class AST():
         self.code = ""
         if(self.LRType == LRTYPE.RTYPE):
             if(self.nodeType == NODETYPE.FLOATLITERAL):
-                self.code = "STOREF {0} $T{1} \n".format(self.value, AST.tempRegNum)
+                self.code = "STOREF {0} $T{1}\n".format(self.value, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.nodeType == NODETYPE.INTLITERAL):
-                self.code = "STOREI {0} $T{1} \n".format(self.value, AST.tempRegNum)
+                self.code = "STOREI {0} $T{1}\n".format(self.value, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
         return self.code
@@ -102,38 +102,38 @@ class ASTMath(AST):
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
             self.nodeType = NODETYPE.INTLITERAL
             if(self.opcode == MATHOP.ADD):
-                newCode = "ADDI {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "ADDI {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.SUB):
-                newCode = "SUBI {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "SUBI {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.MUL):
-                newCode = "MULTI {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "MULTI {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.DIV):
-                newCode = "DIVI {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "DIVI {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
 
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
             self.nodeType = NODETYPE.FLOATLITERAL
             if(self.opcode == MATHOP.ADD):
-                newCode = "ADDF {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "ADDF {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.SUB):
-                newCode = "SUBF {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "SUBF {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.MUL):
-                newCode = "MULTF {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "MULTF {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
             elif(self.opcode == MATHOP.DIV):
-                newCode = "DIVF {0} {1} $T{2} \n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
+                newCode = "DIVF {0} {1} $T{2}\n".format(self.Left.tempReg, self.Right.tempReg, AST.tempRegNum)
                 self.tempReg = "$T{0}".format(AST.tempRegNum)
                 AST.tempRegNum += 1
 
@@ -157,9 +157,9 @@ class ASTAssign(AST):
             opRegValue = self.Right.value
 
         if(self.Right.nodeType == NODETYPE.INTLITERAL):
-            self.code = rCode + "STOREI {0} {1} \n".format(opRegValue, self.Left.value)
+            self.code = rCode + "STOREI {0} {1}\n".format(opRegValue, self.Left.value)
         elif(self.Right.nodeType == NODETYPE.FLOATLITERAL):
-            self.code = rCode + "STOREF {0} {1} \n".format(opRegValue, self.Left.value)
+            self.code = rCode + "STOREF {0} {1}\n".format(opRegValue, self.Left.value)
         return self.code
 
 
@@ -189,14 +189,14 @@ class ASTWrite(AST):
     def generateSelfCode(self, lCode, rCode):
         self.code = ""
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
-            self.code = "WRITEI {0} \n".format(self.Left.tempReg)
+            self.code = "WRITEI {0}\n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
-            self.code = "WRITEF {0} \n".format(self.Left.tempReg)
+            self.code = "WRITEF {0}\n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.STRINGLITERAL):
             if self.addStore:
                 self.code = "STORES {0} {1}\n".format(self.stringLiteral, self.Left.tempReg)
 
-            self.code += "WRITES {0} \n".format(self.Left.tempReg)
+            self.code += "WRITES {0}\n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
         return self.code
@@ -211,9 +211,9 @@ class ASTRead(AST):
 
     def generateSelfCode(self, lCode, rCode):
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
-            self.code = "READI {0} \n".format(self.Left.tempReg)
+            self.code = "READI {0}\n".format(self.Left.tempReg)
         elif(self.Left.nodeType == NODETYPE.FLOATLITERAL):
-            self.code = "READF {0} \n".format(self.Left.tempReg)
+            self.code = "READF {0}\n".format(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
         return self.code
@@ -253,30 +253,30 @@ class ASTCond(AST):
 
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
             if(self.opcode == COMPOP.LT):
-                newCode = "LTI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "LTI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.GT):
-                newCode = "GTI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "GTI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.EQ):
-                newCode = "EQI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "EQI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.NE):
-                newCode = "NEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "NEI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.LE):
-                newCode = "LEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "LEI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.GE):
-                newCode = "GEI {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "GEI {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
         else:
             if(self.opcode == COMPOP.LT):
-                newCode = "LTF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "LTF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.GT):
-                newCode = "GTF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "GTF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.EQ):
-                newCode = "EQF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "EQF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.NE):
-                newCode = "NEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "NEF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.LE):
-                newCode = "LEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "LEF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
             elif(self.opcode == COMPOP.GE):
-                newCode = "GEF {0} {1} LABEL{2} \n".format(leftRegValue, rightRegValue, self.endLabel)
+                newCode = "GEF {0} {1} LABEL{2}\n".format(leftRegValue, rightRegValue, self.endLabel)
 
 
         self.code = lCode + rCode + newCode
@@ -474,7 +474,7 @@ class ASTLabel(AST):
         print("LABEL, value = {0}, LRType = {1}, type={2}, labelNum = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelNum ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "LABEL LABEL{0} \n".format(self.labelNum)
+        self.code = "LABEL LABEL{0}\n".format(self.labelNum)
         return self.code
 
 class ASTJump(AST):    
@@ -487,7 +487,7 @@ class ASTJump(AST):
         print("JUMP, value = {0}, LRType = {1}, type={2}, labelNum = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelNum ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "JUMP LABEL{0} \n".format(self.labelNum)
+        self.code = "JUMP LABEL{0}\n".format(self.labelNum)
         return self.code
 
 

@@ -16,6 +16,7 @@ class TinyGenerator():
         self.declDict = {}
         self.regVals = {}
         self.stringDict = {}
+        self.writeVals = {}
 
     def generate(self):
         stmtList = self.IRcode.split("\n")
@@ -111,8 +112,11 @@ class TinyGenerator():
                 return opmrl_op1, reg_op2
             else:
                 tempName = self.temporaryAllocate()
-                self.tinyCode += ("move {0} r{1}\n".format(opmrl_op2, self.regDict[tempName]))
-                opmrl_op2 = "r{0}".format(self.regDict[tempName])
+                if opmrl_op1 in self.writeVals.keys():
+                    opmrl_op2 = "r{0}".format(self.writeVals[opmrl_op1])
+                else:
+                    self.tinyCode += ("move {0} r{1}\n".format(opmrl_op2, self.regDict[tempName]))
+                    opmrl_op2 = "r{0}".format(self.regDict[tempName])
 
         if reg_op2 in self.regVals.keys():
             if opmrl_op1 == self.regVals[reg_op2][0] and self.regVals[reg_op2][1] == 1:
@@ -120,7 +124,12 @@ class TinyGenerator():
             else:
                 self.regVals[reg_op2][1] = 0
 
-        self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
+        if opmrl_op1 in self.writeVals.keys():
+            reg_op2 = "r{0}".format(self.writeVals[opmrl_op1])
+            self.regDict[result] = self.writeVals[opmrl_op1]
+            self.writeVals.pop(opmrl_op1)
+        else:
+            self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
 
     def addi(self, IRLine):
@@ -380,7 +389,7 @@ class TinyGenerator():
         self.tinyCode += "\n".join(code) + "\n"
 
         return
-        
+
     def label(self, IRLine):
         lineSplit = IRLine.split(" ")
         label = lineSplit[1]
@@ -394,9 +403,13 @@ class TinyGenerator():
     def readWriteOperandSetup(self, op2, code):
         opmr_op2 = ""
         if op2.replace(".", "").replace("-", "").isdigit():
-            regVar = self.temporaryAllocate()
-            code.append("move {0} r{1}".format(op2, self.regDict[regVar])) 
-            opmr_op2 = "r" + str(self.regDict[regVar])    
+            if op2 in self.writeVals.keys():
+                opmr_op2 = "r" + str(self.writeVals[op2])
+            else:
+                regVar = self.temporaryAllocate()
+                code.append("move {0} r{1}".format(op2, self.regDict[regVar])) 
+                opmr_op2 = "r" + str(self.regDict[regVar])   
+                self.writeVals[op2] = self.regDict[regVar] 
         elif not op2.startswith("$"):
             opmr_op2 = op2
             self.declDict[opmr_op2] = ""
