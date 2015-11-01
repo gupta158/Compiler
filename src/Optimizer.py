@@ -5,8 +5,10 @@ from AST import *
 
 #TODO : a = 20 -> 1 move
 #       redundant moves for only 1 temp
-class Optimizer():
-
+class Optimizer():  
+    opsThatChangeReg = ["STOREI", "STOREF", "ADDI", "ADDF", "SUBI", "SUBF", "MULTI", "MULTF", "DIVI", "DIVF", "STOREI", "STOREF", "READI", "READF"]
+    opsThatDontChangeReg = ["WRITEI", "WRITEF"]
+            
     def __init__(self, IRcode):
         self.IRcode = IRcode
         self.Regs = {}
@@ -31,7 +33,14 @@ class Optimizer():
 
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
             IRLines = self.reuseRegisters(IRLines)
+
+            # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            # print(self.createNewIR(IRLines))
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            IRLines = self.removeUnecessaryStores(IRLines)
                         
+            # print(";After reduce")
+            # print(self.createNewIR(IRLines))
             if self.createNewIR(IRLines) == oldIR:
                 break   
 
@@ -42,9 +51,65 @@ class Optimizer():
         IRLines = self.reduceRegisters(IRLines)
         # print(";After reduce")
         # print(self.createNewIR(IRLines))
-        
-
         return self.createNewIR(IRLines)
+
+
+    def markLastChangedLines(self, IRlines):
+        for IRline in IRlines:
+            for reg in IRline.Regs:
+                if not reg in self.Regs.keys():
+                    self.Regs[reg] = Register(reg, IRline.lineNum, IRline.lineNum)
+                self.Regs[reg].lastUsed = IRline.lineNum
+
+            if IRline.op in self.opsThatChangeReg:
+                reg = IRline.lineSplit[-1]
+                if not reg.startswith("$"):
+                    continue
+                self.Regs[reg].lastChanged = IRline.lineNum
+
+    def removeUnecessaryStores(self, IRLines):
+        def checkLastChanged():
+            reg1 = IRLine.lineSplit[2]
+            if reg1.startswith("$") and self.Regs[reg1].lastChanged == IRLine.lineNum:
+                return True
+            return False
+
+        def checkIfRegChanged(firstReg):
+            if IRLines[lineNumber].op in self.opsThatChangeReg and firstReg == IRLines[lineNumber].Regs[-1]:
+                return True
+            return False                
+
+        self.Regs = {}
+        self.markLastChangedLines(IRLines)
+        mappingDict = {}
+        recycledRegisters = []
+        newIRLines = []
+        for IRLine in IRLines:
+            isStore     = IRLine.lineNum and IRLine.op in ["STOREI", "STOREF"]
+            if isStore and checkLastChanged() and IRLine.lineSplit[1].startswith("$"):
+                regChanged = False
+                for lineNumber in range(IRLine.lineNum+1, self.Regs[IRLine.lineSplit[2]].lastUsed+1):
+                    if checkIfRegChanged(IRLine.lineSplit[1]):
+                        regChanged = True
+
+                if regChanged:
+                    newIRLines.append(IRLine)
+                else:
+                    reg1 = IRLine.lineSplit[1]
+                    if reg1 in mappingDict.keys():
+                        regresult   = IRLine.lineSplit[2]
+                        mappingDict[regresult] = mappingDict[reg1]
+                    else:
+                        reg1 = IRLine.lineSplit[1]
+                        regresult   = IRLine.lineSplit[2]
+                        mappingDict[regresult] = reg1
+            else: 
+                regArray = IRLine.Regs
+                for reg in regArray:
+                    if reg in mappingDict.keys():
+                        IRLine.updateLine(reg, mappingDict[reg])
+                newIRLines.append(IRLine)
+        return newIRLines
 
     def reuseRegisters(self, IRLines):
         def checkLastUsed():
@@ -75,23 +140,6 @@ class Optimizer():
                     if reg in mappingDict.keys():
                         IRLine.updateLine(reg, mappingDict[reg])
                 newIRLines.append(IRLine)
-                # if self.Regs[reg].firstUsed == IRLine.lineNum:
-                #     if len(recycledRegisters) != 0:
-                #         mappingDict[reg] = recycledRegisters.pop()
-
-                # elif self.Regs[reg].lastUsed == IRLine.lineNum:
-                #     if reg in mappingDict.keys():
-                #         recycledRegisters.append(mappingDict[reg])
-                #     else:
-                #         recycledRegisters.append(reg)
-
-                # if reg in mappingDict.keys():
-                #     IRLine.updateLine(reg, mappingDict[reg])
-                #print("----------------------------------------------------------------------")
-                #print(mappingDict)
-                #print(IRLine.line)
-                #print(recycledRegisters)
-                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return newIRLines
 
     def mapMemoryToRegisters(self, IRLines):
@@ -374,6 +422,7 @@ class Register():
         self.regName = regName
         self.firstUsed = firstUsed
         self.lastUsed = lastUsed
+        self.lastChanged = -1
 
 
 class IRLineObject():
