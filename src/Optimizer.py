@@ -19,13 +19,14 @@ class Optimizer():
             oldIR = self.createNewIR(IRLines)
             IRLines = self.checkConstants(IRLines)
             
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.reduceRegisters(IRLines)
             
-            # print(self.createNewIR(IRLines))
+            
+            #print(self.createNewIR(IRLines))
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.CSE(IRLines)
-            # print(self.createNewIR(IRLines))
+            #print(self.createNewIR(IRLines))
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.reduceRegisters(IRLines)
 
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.simplifyMoves(IRLines)
