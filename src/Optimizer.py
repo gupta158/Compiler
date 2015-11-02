@@ -20,8 +20,7 @@ class Optimizer():
         while 1:
             oldIR = self.createNewIR(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.mapMemoryToRegisters(IRLines)
+            
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.checkConstants(IRLines)
 
@@ -47,6 +46,9 @@ class Optimizer():
 
         # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         # print(self.createNewIR(IRLines))
+
+        #IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        #IRLines = self.mapMemoryToRegisters(IRLines)
         IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
         IRLines = self.reduceRegisters(IRLines)
         # print(";After reduce")
@@ -277,7 +279,7 @@ class Optimizer():
 
     def checkConstants(self, IRLines):
         def ifConstant(value):
-            if value in regConstantDict.keys() and regConstantDict[value][1]:
+            if value in regConstantDict.keys() and value not in ignoreSet and regConstantDict[value][1]:
                 return True
 
             return False
@@ -286,6 +288,9 @@ class Optimizer():
             if value in regConstantDict.keys(): 
                 regConstantDict[value][1] = 0
 
+        ignoreSets = self.findLoops(IRLines)
+        ignoreSet = set()
+        activeLoops = set()
         newIRLines = []
         regConstantDict = {}
         oldLineisComp = False
@@ -297,17 +302,25 @@ class Optimizer():
             isStore = IRLine.op in ["STOREI", "STOREF"]
             isRead  = IRLine.op in ["READI", "READF"]
 
-            if isLoop:
-                if IRLine.op == "LABEL" and IRLine.line.split(" ")[1] == oldLabel:
-                    isLoop = False
-                continue
+            #this check brakes shit
+            #if isLoop:
+            #   if IRLine.op == "LABEL" and IRLine.line.split(" ")[1] == oldLabel:
+            #      isLoop = False
+            #   continue
 
-            if oldLineisComp and IRLine.op == "LABEL":
-                isLoop = True
-                oldLineisComp = False
-                continue
+            # have no idea what this does
+            #if oldLineisComp and IRLine.op == "LABEL":
+            #    isLoop = True
+            #    oldLineisComp = False
+            #    continue
 
             splitline = IRLine.line.split(" ")
+
+            if IRLine.op == "LABEL" and splitline[1] in ignoreSets.keys():
+                ignoreSet |= ignoreSets[splitline[1]][1] #Cant just invalidate because items not seen yet
+                activeLoops.add(splitline[1])
+
+
             if isStore:
                 if splitline[1].replace(".", "").replace("-", "").isdigit():
                     regConstantDict[splitline[2]] = [splitline[1], 1]
@@ -317,7 +330,7 @@ class Optimizer():
                     newIRLines.pop()
                 else:
                     invalidate(splitline[2])
-                continue
+                    continue
             elif isRead:
                 invalidate(splitline[1])
 
@@ -362,13 +375,80 @@ class Optimizer():
 
             oldLineisComp = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] 
             oldLabel = IRLine.line.split(' ')[3] if oldLineisComp else ""
- 
+            
+            if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
+                if splitline[3] in ignoreSets.keys():
+                    if ignoreSets[splitline[3]][0] == IRLine.lineNum:
+                        activeLoops.discard(splitline[3])
+                        ignoreSet = set()
+                        for label in activeLoops:
+                            ignoreSet |= ignoreSets[lable][1] 
+
+
+            if IRLine.op == "JUMP":
+                if splitline[1] in ignoreSets.keys():
+                    if ignoreSets[splitline[1]][0] == IRLine.lineNum:
+                        activeLoops.discard(splitline[3])
+                        ignoreSet = set()
+                        for label in activeLoops:
+                            ignoreSet |= ignoreSets[lable][1] 
+
         for line in newIRLines:
             #print(line.line)
             pass
-
+        
         return newIRLines
 
+    def findLoops(self, IRLines):
+        def addToAllSets(result):
+            for key, value in possNonConstant.items():
+                value.add(result)
+
+
+        nonConstants = {}
+        possNonConstant = {}
+        for IRLine in IRLines:
+            regArray = IRLine.Regs
+            isStore = IRLine.op in ["STOREI", "STOREF"]
+            isRead  = IRLine.op in ["READI", "READF"]
+            isLabel  = IRLine.op == "LABEL"
+            isJump = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF", "JUMP"] 
+            splitline = IRLine.line.split(" ")
+
+            if IRLine.op in ["ADDI", "SUBI", "MULTI", "DIVI","ADDF", "SUBF", "MULTF", "DIVF"]:
+                if splitline[1].replace(".", "").replace("-", "").isdigit() and splitline[2].replace(".", "").replace("-", "").isdigit():
+                    pass
+                else:
+                    addToAllSets(splitline[3])
+                continue
+
+            if IRLine.op in ["STOREI", "STOREF"]:#if not a literal constant, we might need to ignore it
+                if splitline[1].replace(".", "").replace("-", "").isdigit():
+                    pass
+                else:
+                    addToAllSets(splitline[2])
+                continue
+
+            if IRLine.op in ["READI", "READF"]:
+                addToAllSets(splitline[1])
+                continue
+
+            
+            if IRLine.op == "LABEL": # find a new label, this may loop back here
+                possNonConstant[splitline[1]] =set()
+                continue
+
+                
+            if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
+                if splitline[3] in possNonConstant.keys(): #if it is a loop back, it is a problem
+                    nonConstants[splitline[3]] = (IRLine.lineNum ,possNonConstant[splitline[3]])
+                continue
+
+            if IRLine.op == "JUMP":
+                if splitline[1] in possNonConstant.keys(): 
+                    nonConstants[splitline[1]] = (IRLine.linenNum, possNonConstant[splitline[3]])
+                continue
+        return nonConstants
 
     def CSE(self, IRLines):
         def removeResult(result):
