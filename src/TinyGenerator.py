@@ -362,7 +362,7 @@ class TinyGenerator():
 
         flipped = self.compOperand(op1, op2, op.endswith("I"))
         if flipped:
-            CompOP = COMPOP.inverseOP(CompOP)
+            CompOP = COMPOP.inverseTinyOP(CompOP)
 
         if CompOP == COMPOP.LT:
             code.append("jlt {0}".format(label))

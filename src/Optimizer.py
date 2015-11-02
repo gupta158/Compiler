@@ -20,7 +20,6 @@ class Optimizer():
         while 1:
             oldIR = self.createNewIR(IRLines)
 
-            
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.checkConstants(IRLines)
 
@@ -46,11 +45,11 @@ class Optimizer():
 
         # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         # print(self.createNewIR(IRLines))
-
-        #IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        #IRLines = self.mapMemoryToRegisters(IRLines)
         IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
         IRLines = self.reduceRegisters(IRLines)
+
+        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        IRLines = self.mapMemoryToRegisters(IRLines)
         # print(";After reduce")
         # print(self.createNewIR(IRLines))
         return self.createNewIR(IRLines)
@@ -289,20 +288,24 @@ class Optimizer():
                 regConstantDict[value][1] = 0
 
         ignoreSets = self.findLoops(IRLines)
-        ignoreSet = set()
-        activeLoops = set()
+        # ignoreSet = set()
+        # activeLoops = set()
         newIRLines = []
         regConstantDict = {}
         oldLineisComp = False
         isLoop = False
         oldLabel = ""
+        ignoreSet = set()
+        for label in ignoreSets.keys():
+           ignoreSet |= ignoreSets[label][1]
+
         for IRLine in IRLines:
             newIRLines.append(IRLine)
             regArray = IRLine.Regs
             isStore = IRLine.op in ["STOREI", "STOREF"]
             isRead  = IRLine.op in ["READI", "READF"]
 
-            #this check brakes shit
+            #this check brakes
             #if isLoop:
             #   if IRLine.op == "LABEL" and IRLine.line.split(" ")[1] == oldLabel:
             #      isLoop = False
@@ -316,18 +319,25 @@ class Optimizer():
 
             splitline = IRLine.line.split(" ")
 
-            if IRLine.op == "LABEL" and splitline[1] in ignoreSets.keys():
-                ignoreSet |= ignoreSets[splitline[1]][1] #Cant just invalidate because items not seen yet
-                activeLoops.add(splitline[1])
+            # if IRLine.op == "LABEL" and splitline[1] in ignoreSets.keys():
+            #     ignoreSet |= ignoreSets[splitline[1]][1] #Cant just invalidate because items not seen yet
+            #     activeLoops.add(splitline[1])
 
 
             if isStore:
-                if splitline[1].replace(".", "").replace("-", "").isdigit():
+                if splitline[1].replace(".", "").replace("-", "").isdigit() and splitline[2] not in ignoreSet:
                     regConstantDict[splitline[2]] = [splitline[1], 1]
                     newIRLines.pop()
                 elif ifConstant(splitline[1]):
-                    regConstantDict[splitline[2]] = [regConstantDict[splitline[1]][0], 1]
-                    newIRLines.pop()
+                    if splitline[2] in ignoreSet:
+                        lineToFix = newIRLines.pop()
+                        lineToFix.lineSplit[1] = regConstantDict[lineToFix.lineSplit[1]][0]
+                        lineToFix.line = ' '.join(lineToFix.lineSplit)
+                        lineToFix = IRLineObject(lineToFix.line, lineToFix.lineNum)
+                        newIRLines.append(lineToFix)
+                    else:
+                        regConstantDict[splitline[2]] = [regConstantDict[splitline[1]][0], 1]
+                        newIRLines.pop()
                 else:
                     invalidate(splitline[2])
                     continue
@@ -376,22 +386,22 @@ class Optimizer():
             oldLineisComp = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] 
             oldLabel = IRLine.line.split(' ')[3] if oldLineisComp else ""
             
-            if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
-                if splitline[3] in ignoreSets.keys():
-                    if ignoreSets[splitline[3]][0] == IRLine.lineNum:
-                        activeLoops.discard(splitline[3])
-                        ignoreSet = set()
-                        for label in activeLoops:
-                            ignoreSet |= ignoreSets[lable][1] 
+            # if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
+            #     if splitline[3] in ignoreSets.keys():
+            #         if ignoreSets[splitline[3]][0] == IRLine.lineNum:
+            #             activeLoops.discard(splitline[3])
+            #             ignoreSet = set()
+            #             for label in activeLoops:
+            #                 ignoreSet |= ignoreSets[lable][1] 
 
 
-            if IRLine.op == "JUMP":
-                if splitline[1] in ignoreSets.keys():
-                    if ignoreSets[splitline[1]][0] == IRLine.lineNum:
-                        activeLoops.discard(splitline[3])
-                        ignoreSet = set()
-                        for label in activeLoops:
-                            ignoreSet |= ignoreSets[lable][1] 
+            # if IRLine.op == "JUMP":
+            #     if splitline[1] in ignoreSets.keys():
+            #         if ignoreSets[splitline[1]][0] == IRLine.lineNum:
+            #             activeLoops.discard(splitline[3])
+            #             ignoreSet = set()
+            #             for label in activeLoops:
+            #                 ignoreSet |= ignoreSets[lable][1] 
 
         for line in newIRLines:
             #print(line.line)
@@ -409,10 +419,10 @@ class Optimizer():
         possNonConstant = {}
         for IRLine in IRLines:
             regArray = IRLine.Regs
-            isStore = IRLine.op in ["STOREI", "STOREF"]
-            isRead  = IRLine.op in ["READI", "READF"]
-            isLabel  = IRLine.op == "LABEL"
-            isJump = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF", "JUMP"] 
+            # isStore = IRLine.op in ["STOREI", "STOREF"]
+            # isRead  = IRLine.op in ["READI", "READF"]
+            # isLabel  = IRLine.op == "LABEL"
+            # isJump = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF", "JUMP"] 
             splitline = IRLine.line.split(" ")
 
             if IRLine.op in ["ADDI", "SUBI", "MULTI", "DIVI","ADDF", "SUBF", "MULTF", "DIVF"]:

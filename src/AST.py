@@ -515,6 +515,21 @@ class COMPOP(Enum):
             return COMPOP.LT
         pass
 
+    def inverseTinyOP(op):
+        if op == COMPOP.LT:
+            return COMPOP.GE
+        elif op == COMPOP.GT:
+            return COMPOP.LE
+        elif op == COMPOP.EQ:
+            return COMPOP.EQ
+        elif op == COMPOP.NE:
+            return COMPOP.NE
+        elif op == COMPOP.LE:
+            return COMPOP.GT
+        elif op == COMPOP.GE:
+            return COMPOP.LT
+        pass
+
 
 class MATHOP(Enum):
     ADD     = 1
