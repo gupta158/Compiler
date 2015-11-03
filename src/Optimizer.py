@@ -20,8 +20,8 @@ class Optimizer():
         while 1:
             oldIR = self.createNewIR(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.checkConstants(IRLines)
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = self.checkConstants(IRLines)
 
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.CSE(IRLines)
@@ -48,8 +48,8 @@ class Optimizer():
         IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
         IRLines = self.reduceRegisters(IRLines)
 
-        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        IRLines = self.mapMemoryToRegisters(IRLines)
+        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        # IRLines = self.mapMemoryToRegisters(IRLines)
         # print(";After reduce")
         # print(self.createNewIR(IRLines))
         return self.createNewIR(IRLines)
