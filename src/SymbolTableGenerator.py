@@ -138,8 +138,12 @@ class SymbolTableGenerator(LittleExprListener):
         elif ctx.else_part() is not None and ctx.else_part().getText():
             ifNode.ElseNode = self.ASTStack.pop()
 
-        ifNode.ThenNode = self.ASTStack.pop()
-        ifNode.CondNode = self.ASTStack.pop()
+        if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+            ifNode.ThenNode = self.ASTStack.pop()
+
+        if ctx.cond() is not None and ctx.cond().getText():
+            ifNode.CondNode = self.ASTStack.pop()
+
         ifNode.setupNode()
 
         self.ASTStack.append(ifNode)
@@ -153,13 +157,14 @@ class SymbolTableGenerator(LittleExprListener):
 
         forNode = ASTFor()
 
-        forNode.StmtNode      = self.ASTStack.pop()
+        if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+            forNode.StmtNode      = self.ASTStack.pop()
 
         if ctx.incr_stmt() is not None and ctx.incr_stmt().getText():
             forNode.IncrNode      = self.ASTStack.pop()
 
-
-        forNode.CondNodeStart = self.ASTStack.pop()
+        if ctx.cond() is not None and ctx.cond().getText():
+            forNode.CondNodeStart = self.ASTStack.pop()
 
         if ctx.init_stmt() is not None and ctx.init_stmt().getText():
             forNode.InitNode      = self.ASTStack.pop()
