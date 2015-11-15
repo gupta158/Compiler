@@ -50,8 +50,28 @@ class TinyGenerator():
                 "READF": self.readf,
                 "WRITEI": self.writei,
                 "WRITEF": self.writef,
-                "WRITES": self.writes
+                "WRITES": self.writes,
+                "JSR":self.jsr,
+                "PUSH":self.push,
+                "POP":self.pop,
+                "RET":self.ret,
+                "LINK":self.link
             }
+        #set up a main caller
+        code = []
+        
+        code.append("push")
+        code.append("push r0")
+        code.append("push r1")
+        code.append("push r2")
+        code.append("push r3")
+
+        code.append("jsr main")
+
+        code.append("sys halt")
+
+        self.tinyCode += "\n".join(code) + "\n"
+
         for line in stmtList:
             #print(line)
             # Get the function from switcher dictionary
@@ -61,11 +81,12 @@ class TinyGenerator():
         # print(self.regVals)
 
         if len(self.declDict) != 0:
-            self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "sys halt \nend"
+            self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "\nend"
         else:
-            self.tinyCode = self.tinyCode + "sys halt \nend"
+            self.tinyCode = self.tinyCode + "\nend"
         
         return
+
     def registerAllocate(self, tempName):
         if not tempName in self.regDict.keys():
             self.regDict[tempName] = self.regNum
@@ -283,8 +304,6 @@ class TinyGenerator():
         self.tinyCode += "\n".join(code) + "\n"
         return
 
-
-
     def stores(self, IRLine):
         lineSplit = IRLine.split(" ")
         # op1 = lineSplit[1]
@@ -295,7 +314,6 @@ class TinyGenerator():
         code.append("str {0} {1}".format(op1, result))
         self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
         return
-
 
     def compOperand(self, op1, op2, dataType):
         code = []
@@ -480,6 +498,71 @@ class TinyGenerator():
         
         self.tinyCode += "\n".join(code) + "\n"
         pass
+
+    def jsr(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        label = lineSplit[1]
+        code = []
+
+        code.append("push r0")
+        code.append("push r1")
+        code.append("push r2")
+        code.append("push r3")
+
+        code.append("jsr {0}".format(label))
+
+        code.append("pop r3")
+        code.append("pop r2")
+        code.append("pop r1")
+        code.append("pop r0")
+
+        self.tinyCode += "\n".join(code) + "\n"
+
+    def push(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        code = []
+        if len(lineSplit) == 2:
+            toPush = lineSplit[1]
+            if toPush.replace(".", "").replace("-", "").isdigit():
+                value = toPush
+            elif not toPush.startswith("$"):
+                value = toPush
+            else:
+                self.registerAllocate(toPush)
+                value = "r{0}".format(self.regDict[toPush])
+            code.append("push {0}".format(value))
+        else:
+            code.append("push")
+
+        self.tinyCode += "\n".join(code) + "\n"
+
+    def pop(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        code = []
+        if len(lineSplit) == 2:
+            toPush = lineSplit[1]
+            if not toPush.startswith("$"):
+                value = toPush
+            else:
+                self.registerAllocate(toPush)
+                value = "r{0}".format(self.regDict[toPush])
+            code.append("pop {0}".format(value))
+        else:
+            code.append("pop")
+
+        self.tinyCode += "\n".join(code) + "\n"
+
+    def ret(self, IRLine):
+        code = []
+        code.append("unlnk")
+        code.append("ret")
+        self.tinyCode += "\n".join(code) + "\n"
+
+    def link(self, IRLine):
+        code = []
+
+        code.append("link 2")
+        self.tinyCode += "\n".join(code) + "\n"
 
     def errorFunct(self, IRLine):
         pass
