@@ -411,8 +411,9 @@ class Optimizer():
 
     def findLoops(self, IRLines):
         def addToAllSets(result):
-            for key, value in possNonConstant.items():
-                value.add(result)
+            if not result.startswith("$"):
+                for key, value in possNonConstant.items():
+                    value.add(result)
 
 
         nonConstants = {}
