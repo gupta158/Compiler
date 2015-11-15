@@ -5,6 +5,8 @@ from AST import *
 from TinyGenerator import *
 from Optimizer import *
 
+
+#TODO string GLOBALS and LOCALS
 # This class defines a complete listener for a parse tree produced by LittleExprParser.
 class SymbolTableGenerator(LittleExprListener):
 
@@ -15,6 +17,11 @@ class SymbolTableGenerator(LittleExprListener):
         self.printSymbolTable = []
         self.ASTStack  = []
         self.StringStores = []
+        self.GlobalStringStores = []
+        self.allCode = ""
+        self.paramNum = 1
+        self.localNum = 1
+        self.declType = "GLOBAL"
 
 	# Enter a parse tree produced by LittleExprParser#program.
     def enterProgram(self, ctx:LittleExprParser.ProgramContext):
@@ -26,6 +33,7 @@ class SymbolTableGenerator(LittleExprListener):
     def exitProgram(self, ctx:LittleExprParser.ProgramContext):
         #print("\n".join(self.printSymbolTable))
         self.symbolTable.pop()
+        print(self.allCode)
         pass
 
 	# Enter a parse tree produced by LittleExprParser#func_decl.
@@ -33,11 +41,6 @@ class SymbolTableGenerator(LittleExprListener):
        self.printSymbolTable.append("\nSymbol table {0}\r".format(ctx.getChild(2).getText()))
        self.symbolTable.append({})
        pass
-
-	# Exit a parse tree produced by LittleExprParser#func_decl.
-    def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
-        self.symbolTable.pop()
-        pass
 
 	# Enter a parse tree produced by LittleExprParser#if_stmt.
     def enterIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
@@ -74,7 +77,7 @@ class SymbolTableGenerator(LittleExprListener):
     def enterString_decl(self, ctx:LittleExprParser.Param_decl_listContext):
         identifier = ctx.getChild(1).getText()
         value = ctx.getChild(3).getText()
-        self.addSymbolToTable(identifier, "STRING", value)
+        self.addSymbolToTable(identifier, "STRING", value, declType=self.declType)
         self.printSymbolTable.append("name {0} type STRING value {1}\r".format(identifier, value))
         pass
 
@@ -84,13 +87,13 @@ class SymbolTableGenerator(LittleExprListener):
         idListTree = ctx.getChild(1)
         identifier = idListTree.getChild(0).getText()
 
-        self.addSymbolToTable(identifier, varType)
+        self.addSymbolToTable(identifier, varType, declType=self.declType)
         self.printSymbolTable.append("name {0} type {1}\r".format(identifier,varType))
 
         idTailTree = idListTree.getChild(1)        
         while(idTailTree.getChildCount() != 0):
             identifier = idTailTree.getChild(1).getText()
-            self.addSymbolToTable(identifier, varType)
+            self.addSymbolToTable(identifier, varType, declType=self.declType)
             self.printSymbolTable.append("name {0} type {1}\r".format(identifier,varType))
             idTailTree = idTailTree.getChild(2)
         pass
@@ -99,7 +102,7 @@ class SymbolTableGenerator(LittleExprListener):
     def enterParam_decl(self, ctx:LittleExprParser.Param_decl_listContext):
         varType = ctx.getChild(0).getText()
         identifier = ctx.getChild(1).getChild(0).getText()
-        self.addSymbolToTable(identifier, varType)
+        self.addSymbolToTable(identifier, varType, declType="FUNCTPARAM")
         self.printSymbolTable.append("name {0} type {1}\r".format(identifier,varType))
 
 
@@ -109,21 +112,55 @@ class SymbolTableGenerator(LittleExprListener):
     ###########################################################################################################
                 
     # Exit a parse tree produced by LittleExprParser#func_body.
+    def enterFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
+        self.declType = "LOCAL"
+        self.StringStores = []
+        return
+
+    # Exit a parse tree produced by LittleExprParser#func_decl.
+    def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
+        self.symbolTable.pop()
+        identifier = ctx.identifier().getText()
+        functDeclNode = ASTFunctDecl(identifier)
+
+        if ctx.func_body() is not None and ctx.func_body().getText():
+            if ctx.func_body().stmt_list() is not None and ctx.func_body().stmt_list().getText():
+                functDeclNode.StmtListNode = self.ASTStack.pop()
+
+        # print(functDeclNode.printInOrder())
+        self.allCode += functDeclNode.generateCode()
+        self.paramNum  = 1
+        self.localNum  = 1
+        AST.tempRegNum = 1
+        return
+
+    # Exit a parse tree produced by LittleExprParser#func_body.
     def exitFunc_body(self, ctx:LittleExprParser.Func_bodyContext):
         # self.printNewestAST()
-        self.ASTStack[-1].generateCode()
+
+        # identifier = ctx.identifier()
+        # functDeclNode = ASTFunctDecl(identifier)
+        # if ctx.stmt_list is not None and ctx.stmt_list.getText():
+        #     functDeclNode.StmtList = self.ASTStack.pop()
+
+        # self.allCode = functDeclNode.generateCode()
+        # print(functDeclNode.generateCode())
+        # # print(self.ASTStack[-1].code)
+        # self.paramNum  = 1
+        # self.localNum  = 1
+        # AST.tempRegNum = 1
         #print(self.ASTStack[-1].code)
         # #Pre Optimized code
-        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        self.tinyGenerator.generate()
-        self.printTinyIR(comment = 1)
+        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        # self.tinyGenerator.generate()
+        # self.printTinyIR(comment = 1)
 
         # #Optimized code
-        self.optimizer = Optimizer(self.ASTStack[-1].code)
-        self.ASTStack[-1].code = self.optimizer.optimize()
-        self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
-        self.tinyGenerator.generate()
-        self.printTinyIR()
+        # self.optimizer = Optimizer(self.ASTStack[-1].code)
+        # self.ASTStack[-1].code = self.optimizer.optimize()
+        # self.tinyGenerator = TinyGenerator(self.ASTStack[-1].code)
+        # self.tinyGenerator.generate()
+        # self.printTinyIR()
         #self.printNewestAST()
         pass
 
@@ -138,8 +175,12 @@ class SymbolTableGenerator(LittleExprListener):
         elif ctx.else_part() is not None and ctx.else_part().getText():
             ifNode.ElseNode = self.ASTStack.pop()
 
-        ifNode.ThenNode = self.ASTStack.pop()
-        ifNode.CondNode = self.ASTStack.pop()
+        if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+            ifNode.ThenNode = self.ASTStack.pop()
+
+        if ctx.cond() is not None and ctx.cond().getText():
+            ifNode.CondNode = self.ASTStack.pop()
+
         ifNode.setupNode()
 
         self.ASTStack.append(ifNode)
@@ -153,13 +194,14 @@ class SymbolTableGenerator(LittleExprListener):
 
         forNode = ASTFor()
 
-        forNode.StmtNode      = self.ASTStack.pop()
+        if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+            forNode.StmtNode      = self.ASTStack.pop()
 
         if ctx.incr_stmt() is not None and ctx.incr_stmt().getText():
             forNode.IncrNode      = self.ASTStack.pop()
 
-
-        forNode.CondNodeStart = self.ASTStack.pop()
+        if ctx.cond() is not None and ctx.cond().getText():
+            forNode.CondNodeStart = self.ASTStack.pop()
 
         if ctx.init_stmt() is not None and ctx.init_stmt().getText():
             forNode.InitNode      = self.ASTStack.pop()
@@ -224,8 +266,8 @@ class SymbolTableGenerator(LittleExprListener):
 
 
         if identifierSymbol[0] == "STRING":
-            if identifier not in self.StringStores:
-                self.StringStores.append(identifier)
+            if identifier.getText() not in self.StringStores and identifier.getText() not in self.GlobalStringStores:
+                self.StringStores.append(identifier.getText())
                 addStore = True
                 stringLiteral = identifierSymbol[1]
 
@@ -246,11 +288,10 @@ class SymbolTableGenerator(LittleExprListener):
             idTailTree = idTailTree.id_tail() 
 
             if identifierSymbol[0] == "STRING":
-                if identifier.getText() not in self.StringStores:
+                if identifier.getText() not in self.StringStores and identifier.getText() not in self.GlobalStringStores:
                     self.StringStores.append(identifier.getText())
                     addStore = True
                     stringLiteral = identifierSymbol[1]
-                    # print(stringLiteral)
 
             writeNode.addStore = addStore
             writeNode.stringLiteral = stringLiteral
@@ -281,7 +322,7 @@ class SymbolTableGenerator(LittleExprListener):
 
     # Enter a parse tree produced by LittleExprParser#assign_stmt.
     def exitAssign_expr(self, ctx:LittleExprParser.Assign_stmtContext):
-        identifierNode = ctx.getChild(0)
+        identifierNode = ctx.identifier()
         exprNode = self.ASTStack.pop()
 
         assignNode = ASTAssign()
@@ -374,6 +415,78 @@ class SymbolTableGenerator(LittleExprListener):
             self.ASTStack.append(ASTMath(opcode=MATHOP.SUB, LRType=LRTYPE.RTYPE))
 
 
+    ################################################################################
+    #
+    #  Methods overriden for handling functions
+    #
+    ################################################################################
+
+
+    # Exit a parse tree produced by LittleExprParser#call_expr.
+    def exitCall_expr(self, ctx:LittleExprParser.Call_exprContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+
+        identifier = ctx.identifier().getText()
+        functCallNode  = ASTFunctCall(identifier)
+        # functCallNode.Right = ASTJSR(identifier)
+
+        if ctx.expr_list() is not None and ctx.expr_list().getText():
+            functCallNode.ExprListNode = self.ASTStack.pop()
+
+        self.ASTStack.append(functCallNode)
+        return
+
+
+    # Exit a parse tree produced by LittleExprParser#expr_list.
+    def exitExpr_list(self, ctx:LittleExprParser.Expr_listContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+
+        exprListNode = ASTExprList()
+        exprListNode.Left = None
+
+        if ctx.expr_list_tail() is not None and ctx.expr_list_tail().getText():
+            exprListNode.Left = self.ASTStack.pop()
+
+        exprNode = self.ASTStack.pop()
+        exprListNode.Right = exprNode
+
+        self.ASTStack.append(exprListNode)
+        return
+
+    # Exit a parse tree produced by LittleExprParser#expr_list_tail.
+    def exitExpr_list_tail(self, ctx:LittleExprParser.Expr_list_tailContext):
+        if int(ctx.getChildCount()) == 0:
+            return
+
+        exprListNode = ASTExprList()
+        exprListNode.Left = None
+
+        if ctx.expr_list_tail() is not None and ctx.expr_list_tail().getText():
+            exprListNode.Left = self.ASTStack.pop()
+
+        exprNode = self.ASTStack.pop()
+        exprListNode.Right = exprNode
+
+        self.ASTStack.append(exprListNode)
+        return
+
+    # Exit a parse tree produced by LittleExprParser#return_stmt.
+    def exitReturn_stmt(self, ctx:LittleExprParser.Return_stmtContext):
+        assignNode = ASTAssign()
+        assignNode.Left = self.CreateIdentifierNode(identifierText="$R")
+        exprNode = self.ASTStack.pop()
+        assignNode.Right = exprNode
+        assignNode.Left.nodeType = assignNode.Right.nodeType
+
+        returnNode = ASTReturn()
+        returnNode.Left = assignNode
+
+        self.ASTStack.append(returnNode)
+        return
+
+
     ###########################################################################################    
     # Helper Functions
     #
@@ -382,25 +495,31 @@ class SymbolTableGenerator(LittleExprListener):
     # Create Empty Node
     def CreateEmptyNode(self, ctx:LittleExprParser.IdentifierContext):
         astNode = AST()
-        return astNode        
-        pass
+        return astNode     
 
     # Create Identifier Node
-    def CreateIdentifierNode(self, ctx:LittleExprParser.IdentifierContext):
-        identifier = ctx.getChild(0).getText()
-        identifierSymbol = self.GetSymbolFromSymbolTable(identifier)
-        identifierType = ""
-        value = ""
+    def CreateIdentifierNode(self, ctx:LittleExprParser.IdentifierContext=None, identifierText=None):
+        identifier = identifierText
+        ignoreSymbolTable = 1
+        value = identifierText
+        identifierType = NODETYPE.STRINGLITERAL
+        if ctx is not None:
+            identifier = ctx.getChild(0).getText()
+            ignoreSymbolTable = 0
+        if not ignoreSymbolTable:
+            identifierSymbol = self.GetSymbolFromSymbolTable(identifier)
+            identifierType = ""
+            value = ""
 
-        if identifierSymbol[0] == "INT":
-            identifierType = NODETYPE.INTLITERAL
-            value = identifier
-        elif identifierSymbol[0] == "FLOAT":
-            identifierType = NODETYPE.FLOATLITERAL
-            value = identifier
-        elif identifierSymbol[0] == "STRING":
-            identifierType = NODETYPE.STRINGLITERAL
-            value = identifier
+            if identifierSymbol[0] == "INT":
+                identifierType = NODETYPE.INTLITERAL
+                value = identifierSymbol[2]
+            elif identifierSymbol[0] == "FLOAT":
+                identifierType = NODETYPE.FLOATLITERAL
+                value = identifierSymbol[2]
+            elif identifierSymbol[0] == "STRING":
+                identifierType = NODETYPE.STRINGLITERAL
+                value = identifierSymbol[2]
 
         astNode = AST(value=value, LRType=LRTYPE.LTYPE, nodeType=identifierType, tempReg=value)
         return astNode
@@ -416,10 +535,27 @@ class SymbolTableGenerator(LittleExprListener):
         return astNode
         
     # Add variable to identifier
-    def addSymbolToTable(self, identifier, varType, value=None):
+    def addSymbolToTable(self, identifier, varType, value=None, declType="GLOBAL"):
         if(identifier in self.symbolTable[-1]):
             raise SyntaxError(identifier) 
-        self.symbolTable[-1][identifier] = (varType, value)
+
+        if declType == "GLOBAL":
+            self.symbolTable[-1][identifier] = (varType, value, identifier)
+            if varType == "STRING":
+                self.GlobalStringStores.append(identifier)
+                strCode = "STORES {0} {1}\n".format(value, identifier)
+                self.allCode += strCode
+
+        elif declType == "LOCAL":
+            varName = "$L{0}".format(self.localNum)
+            self.localNum += 1
+            self.symbolTable[-1][identifier] = (varType, value, varName)
+
+        elif declType == "FUNCTPARAM":
+            varName = "$P{0}".format(self.paramNum)
+            self.paramNum += 1
+            self.symbolTable[-1][identifier] = (varType, value, varName)
+
 
     # Print symbol table stack
     def printSymbolTableStack(self):

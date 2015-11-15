@@ -58,6 +58,7 @@ class TinyGenerator():
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
             func(line)
+        # print(self.regVals)
 
         if len(self.declDict) != 0:
             self.tinyCode = "var " + "\nvar ".join(self.declDict.keys()) + "\n" + self.tinyCode + "sys halt \nend"
@@ -118,7 +119,11 @@ class TinyGenerator():
                     self.tinyCode += ("move {0} r{1}\n".format(opmrl_op2, self.regDict[tempName]))
                     opmrl_op2 = "r{0}".format(self.regDict[tempName])
 
+        # print("{0}: {1}".format(result, reg_op2))
+        # print(" :::: ".join([op1, op2, result, str(orderMatters)]))
         if reg_op2 in self.regVals.keys():
+            # print(reg_op2)
+            # print(self.regVals)
             if opmrl_op1 == self.regVals[reg_op2][0] and self.regVals[reg_op2][1] == 1:
                 return opmrl_op2, reg_op2
             else:
@@ -264,7 +269,10 @@ class TinyGenerator():
             self.registerAllocate(result)
             opmr_op2 = "r{0}".format(self.regDict[result])
 
-        self.regVals[opmrl_op1] = [opmr_op2, 1]
+
+        # print("{0}: {1}".format(opmrl_op1, opmr_op2))
+        # print(IRLine)
+        self.regVals[opmr_op2 ] = [opmrl_op1, 1]
 
         if isMem1 and isMem2:
             tempName = self.temporaryAllocate()

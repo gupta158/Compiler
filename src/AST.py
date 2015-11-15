@@ -149,6 +149,10 @@ class ASTAssign(AST):
         print("ASSIGN, value = {0}, LRType = {1}, type={2}, tempReg = {3} \n".format(self.value, self.LRType, self.nodeType, self.tempReg))
 
     def generateSelfCode(self, lCode, rCode):
+        # print("INASSIGNAST")
+        # print(lCode)
+        # print(rCode)
+        # print(self.Right.nodeType)
         self.code = ""
         opRegValue = ""
         if self.Right.tempReg is not None:
@@ -156,9 +160,10 @@ class ASTAssign(AST):
         else:   
             opRegValue = self.Right.value
 
-        if(self.Right.nodeType == NODETYPE.INTLITERAL):
+        nodeType = self.Left.nodeType if (self.Right.nodeType == None) else self.Right.nodeType
+        if(nodeType == NODETYPE.INTLITERAL):
             self.code = rCode + "STOREI {0} {1}\n".format(opRegValue, self.Left.value)
-        elif(self.Right.nodeType == NODETYPE.FLOATLITERAL):
+        elif(nodeType == NODETYPE.FLOATLITERAL):
             self.code = rCode + "STOREF {0} {1}\n".format(opRegValue, self.Left.value)
         return self.code
 
@@ -384,7 +389,6 @@ class ASTFor(AST):
         self.CondNodeStart.endLabel = self.ExitLabelNode.labelNum
         self.CondNodeEnd.endLabel   = self.LoopLabelNode.labelNum
 
-
     def printNodeInfo(self):
         print("FOR, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
 
@@ -465,17 +469,21 @@ class ASTFor(AST):
 
 class ASTLabel(AST):    
 
-    def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+    def __init__(self, labelName=None, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
         super().__init__(value="LABEL", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
-        self.labelNum = AST.codeLabelNum
-        AST.codeLabelNum += 1
+        self.labelName = labelName
+        if labelName is None:
+            self.labelName = "LABEL{0}".format(AST.codeLabelNum)
+            self.labelNum  = AST.codeLabelNum
+            AST.codeLabelNum += 1
 
     def printNodeInfo(self):
-        print("LABEL, value = {0}, LRType = {1}, type={2}, labelNum = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelNum ))
+        print("LABEL, value = {0}, LRType = {1}, type={2}, labelName = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelName ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "LABEL LABEL{0}\n".format(self.labelNum)
+        self.code = "LABEL {0}\n".format(self.labelName)
         return self.code
+
 
 class ASTJump(AST):    
 
@@ -490,6 +498,184 @@ class ASTJump(AST):
         self.code = "JUMP LABEL{0}\n".format(self.labelNum)
         return self.code
 
+
+class ASTJSR(AST):    
+
+    def __init__(self, labelName, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.labelName = labelName
+        super().__init__(value="JSR", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+    def printNodeInfo(self):
+        print("JSR, value = {0}, LRType = {1}, type={2}, labelName = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelName ))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = "JSR {0} \n".format(self.labelName)
+        return self.code
+
+
+class ASTPush(AST):
+
+    def __init__(self, pushValue="", value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.pushValue = pushValue
+        super().__init__(value="PUSH", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+    def printNodeInfo(self):
+        print("PUSH, value = {0}, LRType = {1}, type={2}, pushVal = {0} \n".format(self.value, self.LRType, self.nodeType, self.pushValue ))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = "PUSH {0} \n".format(self.pushValue)
+        return self.code
+
+
+class ASTPop(AST):
+
+    def __init__(self, popValue="", value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.popValue = popValue
+        super().__init__(value="PUSH", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+    def printNodeInfo(self):
+        print("POP, value = {0}, LRType = {1}, type={2}, popVal = {3} \n".format(self.value, self.LRType, self.nodeType, self.popValue ))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = "POP {0} \n".format(self.popValue)
+        return self.code
+
+
+class ASTReturn(AST):    
+
+    def __init__(self, labelName=None, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        super().__init__(value="RETURN", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+    def printNodeInfo(self):
+        print("RETURN, value = {0}, LRType = {1}, type={2}, \n".format(self.value, self.LRType, self.nodeType ))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = lCode + "RET\n"
+        return self.code
+
+
+class ASTExprList(AST):  
+
+    def __init__(self, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.paramList = []
+        super().__init__(value="ExprList", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+
+    def printNodeInfo(self):
+        print("ExprList, value = {0}, LRType = {1}, type={2}, tempReg = {3} \n".format(self.value, self.LRType, self.nodeType, self.tempReg))
+
+    def generateSelfCode(self, lCode, rCode):
+        self.code = ""
+
+        if self.Left is not None:
+            self.code = self.code + lCode
+            self.paramList.extend(self.Left.paramList)
+        if self.Right is not None:
+            self.code = self.code + rCode
+            self.paramList.append(self.Right.tempReg)
+
+        return self.code
+
+
+class ASTFunctCall(AST):
+    def __init__(self, functName, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.functName = functName
+        self.ExprListNode = None
+        self.PushNodes    = []
+        self.PopNodes     = []
+        super().__init__("FUNCTCALL", nodeType, LRType, code, tempReg)
+
+    def setupNode(self):
+        self.JSRNode = ASTJSR(self.functName)
+        self.ExitLabelNode = ASTLabel()
+
+
+    def printNodeInfo(self):
+        print("FUNCTCALL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+
+    def generateCode(self):
+        self.setupNode()
+
+        jsrCode       = ""
+        exprListCode  = ""
+        pushCode      = ""
+        popCode       = ""
+
+        if self.ExprListNode is not None:
+            exprListCode = self.ExprListNode.generateCode()
+
+            for param in self.ExprListNode.paramList:
+                paramPushNode = ASTPush(param)
+                self.PushNodes.append(paramPushNode)
+                pushCode  = paramPushNode.generateCode() + pushCode
+
+                paramPopNode = ASTPop()
+                self.PopNodes.append(paramPopNode)
+                popCode  += paramPopNode.generateCode()
+
+        if self.JSRNode is not None:
+            jsrCode = self.JSRNode.generateCode()
+
+        returnPushNode = ASTPush()
+        self.PushNodes.append(returnPushNode)
+        pushCode = returnPushNode.generateCode() + pushCode
+
+        returnPopNode = ASTPop("$T{0}".format(AST.tempRegNum))
+        self.tempReg = "$T{0}".format(AST.tempRegNum)
+        AST.tempRegNum += 1
+        self.PopNodes.append(returnPopNode)
+        popCode  += returnPopNode.generateCode()
+
+        return self.generateSelfCode(exprListCode, pushCode, jsrCode, popCode)
+
+    def generateSelfCode(self, exprListCode, pushCode, jsrCode, popCode):
+        self.code = exprListCode + pushCode + jsrCode + popCode
+        return self.code
+
+
+class ASTFunctDecl(AST):
+  
+    def __init__(self, functName, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+        self.functName = functName
+        self.StmtListNode = None
+        self.FunctLabelNode  = ASTLabel(functName)
+        self.StmtListNode = None
+
+        super().__init__("FUNCTDECL", nodeType, LRType, code, tempReg)
+
+    def printNodeInfo(self):
+        print("FUNCTDECL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
+
+    def generateSelfCode(self, lCode, rCode):
+        functLabelCode = self.FunctLabelNode.generateCode()
+        stmtListCode =  ""
+        linkCode = "LINK\n"
+        returnCode = ""
+        if self.StmtListNode is not None:
+            stmtListCode = self.StmtListNode.generateCode()
+        if not (len(stmtListCode.split("\n")) >= 2 and stmtListCode.split("\n")[-2] == "RET" ):
+            returnCode = "RET\n"
+
+
+        self.code = functLabelCode + linkCode + stmtListCode + returnCode
+        return self.code
+
+
+    def printInOrder(self):
+        if self.FunctLabelNode is not None:
+            print("<left>")
+            self.FunctLabelNode.printInOrder()
+            print("</left>")
+
+        print("<node>")
+        self.printNodeInfo()
+        print("</node>")
+
+        if self.StmtListNode is not None:
+            print("<right>")
+            self.StmtListNode.printInOrder()
+            print("</right>")
+
+        return
 
 
 class COMPOP(Enum):

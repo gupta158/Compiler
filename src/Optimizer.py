@@ -2,12 +2,14 @@ from antlr4 import *
 from LittleExprParser import LittleExprParser
 from LittleExprListener import LittleExprListener
 from AST import *
+import copy
 
 #TODO : a = 20 -> 1 move
 #       redundant moves for only 1 temp
 class Optimizer():  
     opsThatChangeReg = ["STOREI", "STOREF", "ADDI", "ADDF", "SUBI", "SUBF", "MULTI", "MULTF", "DIVI", "DIVF", "STOREI", "STOREF", "READI", "READF"]
     opsThatDontChangeReg = ["WRITEI", "WRITEF"]
+    opsComparison = ["GEI", "GEF", "LEI", "LEF", "LTI", "LTF", "GTI", "GTF", "EQI", "EQF", "NEI", "NEF"]
             
     def __init__(self, IRcode):
         self.IRcode = IRcode
@@ -20,8 +22,9 @@ class Optimizer():
         while 1:
             oldIR = self.createNewIR(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.checkConstants(IRLines)
+
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = self.checkConstants(IRLines)
 
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.CSE(IRLines)
@@ -39,6 +42,10 @@ class Optimizer():
                         
             # print(";After reduce")
             # print(self.createNewIR(IRLines))
+
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # IRLines = self.removeUnnecessaryConditions(IRLines)
+
             if self.createNewIR(IRLines) == oldIR:
                 break   
 
@@ -54,6 +61,85 @@ class Optimizer():
         # print(self.createNewIR(IRLines))
         return self.createNewIR(IRLines)
 
+
+    def removeUnnecessaryConditions(self, IRLines):
+        def checkNumConstant(num):
+            if num.replace(".", "").replace("-", "").isdigit():
+                return True
+            return False
+
+        newIRLines = []
+        labels = []
+        deleteCodeType = [] 
+        exitLabel = []
+        for IRLine in IRLines:
+            if IRLine.op == "LABEL":
+                labels.append(IRLine.lineSplit[1])
+
+            if len(deleteCodeType) > 0:
+                if deleteCodeType[-1] == 1:
+                    if IRLine.op == "LABEL":
+                        if IRLine.lineSplit[1] == exitLabel[-1]:
+                            deleteCodeType.pop()
+                    continue
+                elif deleteCodeType[-1] == 2:
+                    if IRLine.op == "LABEL":
+                        if IRLine.lineSplit[1] == exitLabel[-1]:
+                            if newIRLines[-1].op == "JUMP":
+                                deleteCodeType[-1] = 1
+                                exitLabel.pop()
+                                exitLabel.append(newIRLines[-1].lineSplit[1])
+                                newIRLines.pop()
+                            else:
+                                deleteCodeType.pop()
+                                exitLabel.pop()
+
+                    continue
+
+
+            if IRLine.op in self.opsComparison:
+                opr1      = IRLine.lineSplit[1]
+                opr2      = IRLine.lineSplit[2]
+                labelName = IRLine.lineSplit[3]
+
+                if checkNumConstant(opr1) and checkNumConstant(opr2) and labelName not in labels:
+                    exitLabel.append(labelName)
+                    if IRLine.op in ["GEI", "GEF"]:
+                        if opr1 >= opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    if IRLine.op in ["LEI", "LEF"]:
+                        if opr1 <= opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    if IRLine.op in ["EQI", "EQI"]:
+                        if opr1 == opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    if IRLine.op in ["NEI", "NEF"]:
+                        if opr1 != opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    if IRLine.op in ["LTI", "LTF"]:
+                        if opr1 < opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    if IRLine.op in ["GTI", "GTF"]:
+                        if opr1 > opr2:
+                            deleteCodeType.append(1)
+                        else:
+                            deleteCodeType.append(2)
+                    continue
+                # else:
+                #     deleteCodeType
+            newIRLines.append(IRLine)
+
+        return IRLines
 
     def markLastChangedLines(self, IRlines):
         for IRline in IRlines:
@@ -238,7 +324,6 @@ class Optimizer():
             # print(recycledRegisters)
         return IRLines
 
-
     def simplifyMoves(self, IRLines):
         simpIRLines = []
         lastWasMove = False
@@ -262,12 +347,9 @@ class Optimizer():
             #print(lastWasMove)
         return simpIRLines
 
-
-
     def printRegs(self):
         for i in self.Regs.keys():
             print("{0}: first: {1}, last: {2}".format(self.Regs[i].regName, self.Regs[i].firstUsed, self.Regs[i].lastUsed))
-
 
     def createNewIR(self, IRLines):
         newIR = ""
@@ -287,15 +369,29 @@ class Optimizer():
             if value in regConstantDict.keys(): 
                 regConstantDict[value][1] = 0
 
-        ignoreSets = self.findLoops(IRLines)
-        # ignoreSet = set()
-        # activeLoops = set()
+        def compareDicts(oldDict, newDict):
+            storeLines = []
+            keysList = []
+            for key in oldDict.keys():
+                if oldDict[key][0] != newDict[key][0] and newDict[key][1]:
+                    storeLines.append(IRLineObject("STOREI {0} {1}".format(key, newDict[key])))
+                    keysList.append(key)
+                    oldDict[key][1] = 0
+            return storeLines
+
+        ignoreSets   = self.findLoops(IRLines)
+        ignoreSetsIf = self.findIfs(IRLines)
+
+        ignoreSet = set()
+        activeLoops = set()
         newIRLines = []
         regConstantDict = {}
         oldLineisComp = False
         isLoop = False
         oldLabel = ""
         ignoreSet = set()
+
+        tempDicts = []
         for label in ignoreSets.keys():
            ignoreSet |= ignoreSets[label][1]
 
@@ -319,9 +415,12 @@ class Optimizer():
 
             splitline = IRLine.line.split(" ")
 
-            # if IRLine.op == "LABEL" and splitline[1] in ignoreSets.keys():
-            #     ignoreSet |= ignoreSets[splitline[1]][1] #Cant just invalidate because items not seen yet
-            #     activeLoops.add(splitline[1])
+            if IRLine.op == "LABEL" and splitline[1] in ignoreSetsIf.keys():
+                if splitline[1] in ignoreSetsIf.keys():
+                    activeLoops.discard(splitline[1])
+                    ignoreSet = set()
+                    for label in activeLoops:
+                        ignoreSet |= ignoreSetsIf[label][1] 
 
 
             if isStore:
@@ -383,25 +482,62 @@ class Optimizer():
                     if isMath:
                         invalidate(splitline[3])
 
-            oldLineisComp = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] 
-            oldLabel = IRLine.line.split(' ')[3] if oldLineisComp else ""
+
+            # if IRLine.op in self.opsComparison and len(tempDicts) > 0:
+            #     oldDict = tempDicts[-1][1]
+            #     newStoreLines = compareDicts(oldDict, regConstantDict)
+            #     currLine = newIRLines.pop()
+            #     newIRLines.extend(newStoreLines)
+            #     newIRLines.append(currLine)
+
+            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLine.line)
+
+            # if (IRLine.op == "LABEL" and IRLine.lineSplit[1] == tempDicts[-1][0] and len(tempDicts) > 0 and IRLines[IRLine.lineNum - 1].op != "JUMP"):
+            #     oldDict = tempDicts[-1][1]
+            #     newStoreLines = compareDicts(oldDict, regConstantDict)
+            #     currLine = newIRLines.pop()
+            #     newIRLines.extend(newStoreLines)
+            #     newIRLines.append(currLine)
+            #     regConstantDict = oldDict
+
+            #     tempDicts.pop()
+            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLine.line)
+
+
+            # if IRLine.op == "JUMP" and len(tempDicts) > 0:
+            #     oldDict = tempDicts[-1][1]
+            #     newStoreLines = compareDicts(oldDict, regConstantDict)
+            #     currLine = newIRLines.pop()
+            #     newIRLines.extend(newStoreLines)
+            #     newIRLines.append(currLine)
+            #     regConstantDict = oldDict
+
+            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLine.line)
+
+
+            # if IRLine.op in self.opsComparison and IRLine.lineSplit[3] in ignoreSetsIf.keys():
+            #     tempDicts.append((IRLine.lineSplit[3], regConstantDict.copy()))
+
+                
+            # oldLineisComp = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] 
+            # oldLabel = IRLine.line.split(' ')[3] if oldLineisComp else ""
+
+
             
-            # if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
-            #     if splitline[3] in ignoreSets.keys():
-            #         if ignoreSets[splitline[3]][0] == IRLine.lineNum:
-            #             activeLoops.discard(splitline[3])
-            #             ignoreSet = set()
-            #             for label in activeLoops:
-            #                 ignoreSet |= ignoreSets[lable][1] 
+            if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"] and splitline[3] in ignoreSetsIf.keys():
+                ignoreSet |= ignoreSetsIf[splitline[3]][1] #Cant just invalidate because items not seen yet
+                activeLoops.add(splitline[3])
+                print(ignoreSet)
+                
 
 
-            # if IRLine.op == "JUMP":
-            #     if splitline[1] in ignoreSets.keys():
-            #         if ignoreSets[splitline[1]][0] == IRLine.lineNum:
-            #             activeLoops.discard(splitline[3])
-            #             ignoreSet = set()
-            #             for label in activeLoops:
-            #                 ignoreSet |= ignoreSets[lable][1] 
+            if IRLine.op == "JUMP" and splitline[1] in ignoreSetsIf.keys():
+                ignoreSet |= ignoreSetsIf[splitline[1]][1] #Cant just invalidate because items not seen yet
+                activeLoops.add(splitline[1])
+                print(ignoreSet)
 
         for line in newIRLines:
             #print(line.line)
@@ -452,13 +588,58 @@ class Optimizer():
                 
             if IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
                 if splitline[3] in possNonConstant.keys(): #if it is a loop back, it is a problem
-                    nonConstants[splitline[3]] = (IRLine.lineNum ,possNonConstant[splitline[3]])
+                    nonConstants[splitline[3]] = (IRLine.lineNum ,possNonConstant[splitline[3]].copy())
                 continue
 
             if IRLine.op == "JUMP":
                 if splitline[1] in possNonConstant.keys(): 
-                    nonConstants[splitline[1]] = (IRLine.linenNum, possNonConstant[splitline[3]])
+                    nonConstants[splitline[1]] = (IRLine.lineNum, possNonConstant[splitline[3]].copy())
                 continue
+        return nonConstants
+
+    def findIfs(self, IRLines):
+        def addToAllSets(result):
+            for key, value in possNonConstant.items():
+                value.add(result)
+
+        nonConstants = {}
+        possNonConstant = {}
+        for IRLine in reversed(IRLines):
+            regArray = IRLine.Regs
+            # isStore = IRLine.op in ["STOREI", "STOREF"]
+            # isRead  = IRLine.op in ["READI", "READF"]
+            # isLabel  = IRLine.op == "LABEL"
+            # isJump = IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF", "JUMP"] 
+            splitline = IRLine.line.split(" ")
+
+            if IRLine.op in ["ADDI", "SUBI", "MULTI", "DIVI","ADDF", "SUBF", "MULTF", "DIVF"]:
+                if splitline[1].replace(".", "").replace("-", "").isdigit() and splitline[2].replace(".", "").replace("-", "").isdigit():
+                    pass
+                else:
+                    addToAllSets(splitline[3])
+
+
+            elif IRLine.op in ["STOREI", "STOREF"]:#if not a literal constant, we might need to ignore it
+                if splitline[1].replace(".", "").replace("-", "").isdigit():
+                    pass
+                else:
+                    addToAllSets(splitline[2])
+            
+            elif IRLine.op in ["READI", "READF"]:
+                addToAllSets(splitline[1])
+                        
+            elif IRLine.op == "LABEL": # find a new label, this may loop back here
+                possNonConstant[splitline[1]] = set()
+                              
+            elif IRLine.op in ["GTI", "GTF", "LTI", "LTF", "EQI", "EQF", "NEI", "NEF", "GEI", "GEF", "LEI", "LEF"]:
+                if splitline[3] in possNonConstant.keys(): #if it is a loop back, it is a problem
+                    nonConstants[splitline[3]] = (IRLine.lineNum, possNonConstant[splitline[3]].copy())
+                
+
+            elif IRLine.op == "JUMP":
+                if splitline[1] in possNonConstant.keys(): 
+                    nonConstants[splitline[1]] = (IRLine.lineNum, possNonConstant[splitline[1]].copy())
+
         return nonConstants
 
     def CSE(self, IRLines):
@@ -518,7 +699,7 @@ class Register():
 
 class IRLineObject():
 
-    def __init__(self, line, lineNum):
+    def __init__(self, line, lineNum=-1):
         self.line = line
         self.Regs = []
         self.op = ""
