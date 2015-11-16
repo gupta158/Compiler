@@ -17,6 +17,7 @@ class TinyGenerator():
         self.regVals = {}
         self.stringDict = {}
         self.writeVals = {}
+        self.parameters = 0;
 
     def generate(self):
         stmtList = self.IRcode.split("\n")
@@ -559,9 +560,12 @@ class TinyGenerator():
         self.tinyCode += "\n".join(code) + "\n"
 
     def link(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        parameters = lineSplit[2]
+        localparam = lineSplit[1]
         code = []
-
-        code.append("link 2")
+        self.parameters = int(parameters)
+        code.append("link {0}".format(localparam))
         self.tinyCode += "\n".join(code) + "\n"
 
     def errorFunct(self, IRLine):
