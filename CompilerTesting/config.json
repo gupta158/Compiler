@@ -1,4 +1,5 @@
 { 
-	"name": "Manish",
-	"java": "0"
+	"java"	 : "0", 
+	"display": "all",
+	"verbose": "1"
 }
