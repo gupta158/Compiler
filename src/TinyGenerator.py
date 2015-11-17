@@ -111,6 +111,12 @@ class TinyGenerator():
         elif not op1.startswith("$"):
             opmrl_op1 = op1
             self.declDict[opmrl_op1] = ""
+        elif op1.startswith("$L"):
+            opmrl_op1 = op1.replace("L", "-")
+        elif op1.startswith("$P"):
+            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        elif op1.startswith("$R"):
+            opmrl_op1 = "$" + str(6 + self.parameters)
         else:
             opAllocated = self.registerAllocate(op1)
             opmrl_op1 = "r{0}".format(self.regDict[op1])
@@ -120,6 +126,12 @@ class TinyGenerator():
         elif not op2.startswith("$"):
             opmrl_op2 = op2
             self.declDict[opmrl_op2] = ""
+        elif op2.startswith("$L"):
+            opmrl_op2 = op2.replace("L", "-")
+        elif op2.startswith("$P"):
+            opmrl_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+        elif op2.startswith("$R"):
+            opmrl_op2 = "$" + str(6 + self.parameters)
         else:
             self.registerAllocate(op2)
             opmrl_op2 = "r{0}".format(self.regDict[op2])
@@ -279,6 +291,15 @@ class TinyGenerator():
             isMem1 = True
             opmrl_op1 = op1
             self.declDict[opmrl_op1] = ""
+        elif op1.startswith("$L"):
+            isMem1 = True
+            opmrl_op1 = op1.replace("L", "-")
+        elif op1.startswith("$P"):
+            isMem1 = True
+            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        elif op1.startswith("$R"):
+            isMem1 = True
+            opmrl_op1 = "$" + str(6 + self.parameters)
         else:
             self.registerAllocate(op1)
             opmrl_op1 = "r{0}".format(self.regDict[op1])
@@ -287,6 +308,15 @@ class TinyGenerator():
             isMem2 = True
             opmr_op2 = result
             self.declDict[opmr_op2] = ""
+        elif result.startswith("$L"):
+            isMem2 = True
+            opmr_op2 = result.replace("L", "-")
+        elif result.startswith("$P"):
+            isMem2 = True
+            opmr_op2 = "$" + str(-int(result[2:]) + 6 + self.parameters)
+        elif result.startswith("$R"):
+            isMem2 = True
+            opmr_op2 = "$" + str(6 + self.parameters)
         else:
             self.registerAllocate(result)
             opmr_op2 = "r{0}".format(self.regDict[result])
@@ -313,7 +343,10 @@ class TinyGenerator():
         code  = []
 
         code.append("str {0} {1}".format(op1, result))
-        self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
+        if op1.startswith("$L"):
+            self.tinyCode += "\n".join(code) + "\n"
+        else:
+            self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
         return
 
     def compOperand(self, op1, op2, dataType):
@@ -331,6 +364,12 @@ class TinyGenerator():
         elif not op1.startswith("$"):
             opmrl_op1 = op1
             self.declDict[opmrl_op1] = ""
+        elif op1.startswith("$L"):
+            opmrl_op1 = op1.replace("L", "-")
+        elif op1.startswith("$P"):
+            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        elif op1.startswith("$R"):
+            opmrl_op1 = "$" + str(6 + self.parameters)
         else:
             opAllocated = self.registerAllocate(op1)
             opmrl_op1 = "r{0}".format(self.regDict[op1])
@@ -341,6 +380,12 @@ class TinyGenerator():
         elif not op2.startswith("$"):
             opmrl_op2 = op2
             self.declDict[opmrl_op2] = ""
+        elif op2.startswith("$L"):
+            opmrl_op2 = op2.replace("L", "-")
+        elif op2.startswith("$P"):
+            opmrl_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+        elif op2.startswith("$R"):
+            opmrl_op2 = "$" + str(6 + self.parameters)
         else:
             self.registerAllocate(op2)
             opmrl_op2 = "r{0}".format(self.regDict[op2])
@@ -353,6 +398,13 @@ class TinyGenerator():
             flipped = True
         elif not isReg2:
             opmrl_op2 = self.temporaryAllocate()
+            if op2.startswith("$L"):
+                op2 = op2.replace("L", "-")
+            elif op2.startswith("$P"):
+                op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+            elif op2.startswith("$R"):
+                op2 = "$" + str(6 + self.parameters)
+
             code.append("move {0} r{1}".format(op2, self.regDict[opmrl_op2]))
             opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
 
@@ -440,6 +492,12 @@ class TinyGenerator():
         elif not op2.startswith("$"):
             opmr_op2 = op2
             self.declDict[opmr_op2] = ""
+        elif op2.startswith("$L"):
+            opmr_op2 = op2.replace("L", "-")
+        elif op2.startswith("$P"):
+            opmr_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+        elif op2.startswith("$R"):
+            opmr_op2 = "$" + str(6 + self.parameters)
         else:
             self.registerAllocate(op2)
             opmr_op2 = "r{0}".format(self.regDict[op2])
@@ -523,14 +581,20 @@ class TinyGenerator():
         lineSplit = IRLine.split(" ")
         code = []
         if len(lineSplit) == 2:
-            toPush = lineSplit[1]
-            if toPush.replace(".", "").replace("-", "").isdigit():
-                value = toPush
-            elif not toPush.startswith("$"):
-                value = toPush
+            op1 = lineSplit[1]
+            if op1.replace(".", "").replace("-", "").isdigit():
+                value = op1
+            elif not op1.startswith("$"):
+                value = op1         
+            elif op1.startswith("$L"):
+                value = op1.replace("L", "-")
+            elif op1.startswith("$P"):
+                value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+            elif op1.startswith("$R"):
+                value = "$" + str(6 + self.parameters)
             else:
-                self.registerAllocate(toPush)
-                value = "r{0}".format(self.regDict[toPush])
+                self.registerAllocate(op1)
+                value = "r{0}".format(self.regDict[op1])
             code.append("push {0}".format(value))
         else:
             code.append("push")
@@ -541,12 +605,18 @@ class TinyGenerator():
         lineSplit = IRLine.split(" ")
         code = []
         if len(lineSplit) == 2:
-            toPush = lineSplit[1]
-            if not toPush.startswith("$"):
-                value = toPush
+            op1 = lineSplit[1]
+            if not op1.startswith("$"):
+                value = op1            
+            elif op1.startswith("$L"):
+                value = op1.replace("L", "-")
+            elif op1.startswith("$P"):
+                value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+            elif op1.startswith("$R"):
+                value = "$" + str(6 + self.parameters)
             else:
-                self.registerAllocate(toPush)
-                value = "r{0}".format(self.regDict[toPush])
+                self.registerAllocate(op1)
+                value = "r{0}".format(self.regDict[op1])
             code.append("pop {0}".format(value))
         else:
             code.append("pop")

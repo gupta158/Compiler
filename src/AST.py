@@ -509,7 +509,7 @@ class ASTJSR(AST):
         print("JSR, value = {0}, LRType = {1}, type={2}, labelName = {0} \n".format(self.value, self.LRType, self.nodeType, self.labelName ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "JSR {0} \n".format(self.labelName)
+        self.code = "JSR {0}\n".format(self.labelName)
         return self.code
 
 
@@ -523,7 +523,7 @@ class ASTPush(AST):
         print("PUSH, value = {0}, LRType = {1}, type={2}, pushVal = {0} \n".format(self.value, self.LRType, self.nodeType, self.pushValue ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "PUSH {0} \n".format(self.pushValue)
+        self.code = "PUSH {0}\n".format(self.pushValue)
         return self.code
 
 
@@ -531,13 +531,13 @@ class ASTPop(AST):
 
     def __init__(self, popValue="", value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
         self.popValue = popValue
-        super().__init__(value="PUSH", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
+        super().__init__(value="POP", nodeType=nodeType, LRType=LRType, code=code, tempReg=tempReg)
 
     def printNodeInfo(self):
         print("POP, value = {0}, LRType = {1}, type={2}, popVal = {3} \n".format(self.value, self.LRType, self.nodeType, self.popValue ))
 
     def generateSelfCode(self, lCode, rCode):
-        self.code = "POP {0} \n".format(self.popValue)
+        self.code = "POP {0}\n".format(self.popValue)
         return self.code
 
 
