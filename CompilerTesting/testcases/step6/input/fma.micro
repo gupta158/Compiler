@@ -5,34 +5,10 @@ BEGIN
 	STRING second := "Please enter the second float number: ";
 	STRING third := "Please enter the third float number: ";
 	STRING eol := "\n";
-    STRING star := "*";
+     STRING star := "*";
 	STRING plus := "+";
 	STRING equal := "=";
 	
-	
-	FUNCTION INT main ()
-	BEGIN
-		STRING fooo := "Please enter the third float number: ";
-		FLOAT a,b,c;
-		FLOAT addresult,multiplyresult;
-		a := testVoid();
-		WRITE(intro,first);
-		WRITE(fooo);
-		READ(a);
-		WRITE(second);
-		READ(b);
-		WRITE(third);
-		READ(c);
-		multiplyresult := multiply(a,b);
-		addresult := add(multiplyresult,c);
-		WRITE(a,star,b,plus,c,equal,addresult,eol);
-		RETURN 0;
-	END
-
-	FUNCTION VOID testVoid ()
-	BEGIN
-		WRITE(third,second,first);
-	END
 	FUNCTION FLOAT add (FLOAT a, FLOAT b)
 	BEGIN
 	  FLOAT result;
@@ -45,5 +21,21 @@ BEGIN
 	  FLOAT result;
 		result := a*b;
 		RETURN result;
+	END
+	
+	FUNCTION INT main ()
+	BEGIN
+		FLOAT a,b,c;
+		FLOAT addresult,multiplyresult;
+		WRITE(intro,first);
+		READ(a);
+		WRITE(second);
+		READ(b);
+		WRITE(third);
+		READ(c);
+		multiplyresult := multiply(a,b);
+		addresult := add(multiplyresult,c);
+		WRITE(a,star,b,plus,c,equal,addresult,eol);
+		RETURN 0;
 	END
 END
