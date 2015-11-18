@@ -7,8 +7,8 @@ import copy
 #TODO : a = 20 -> 1 move
 #       redundant moves for only 1 temp
 class Optimizer():  
-    opsThatChangeReg = ["STOREI", "STOREF", "ADDI", "ADDF", "SUBI", "SUBF", "MULTI", "MULTF", "DIVI", "DIVF", "STOREI", "STOREF", "READI", "READF"]
-    opsThatDontChangeReg = ["WRITEI", "WRITEF"]
+    opsThatChangeReg = ["STOREI", "STOREF", "ADDI", "ADDF", "SUBI", "SUBF", "MULTI", "MULTF", "DIVI", "DIVF", "STOREI", "STOREF", "READI", "READF", "POP"]
+    opsThatDontChangeReg = ["WRITEI", "WRITEF","PUSH"]
     opsComparison = ["GEI", "GEF", "LEI", "LEF", "LTI", "LTF", "GTI", "GTF", "EQI", "EQF", "NEI", "NEF"]
             
     def __init__(self, IRcode):
@@ -22,23 +22,25 @@ class Optimizer():
         while 1:
             oldIR = self.createNewIR(IRLines)
 
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.removeRedundantLabels(IRLines)
 
             # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             # IRLines = self.checkConstants(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.CSE(IRLines)
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = self.CSE(IRLines)
             
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-            IRLines = self.simplifyMoves(IRLines)
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = self.simplifyMoves(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
-            IRLines = self.reuseRegisters(IRLines)
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # IRLines = self.reuseRegisters(IRLines)
 
             # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             # print(self.createNewIR(IRLines))
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
-            IRLines = self.removeUnecessaryStores(IRLines)
+            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # IRLines = self.removeUnecessaryStores(IRLines)
                         
             # print(";After reduce")
             # print(self.createNewIR(IRLines))
@@ -52,14 +54,54 @@ class Optimizer():
 
         # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         # print(self.createNewIR(IRLines))
-        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        IRLines = self.reduceRegisters(IRLines)
+        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        # IRLines = self.reduceRegisters(IRLines)
 
-        IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
-        IRLines = self.mapMemoryToRegisters(IRLines)
+        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        # IRLines = self.mapMemoryToRegisters(IRLines)
         # print(";After reduce")
         # print(self.createNewIR(IRLines))
         return self.createNewIR(IRLines)
+
+
+    def removeRedundantLabels(self, IRLines):
+        newIRLines = []
+        labelsDict = {}
+
+        lastLineIsLabel = False
+        lastLabelNum = -1
+        for IRLine in IRLines:
+            lineIsLabel = IRLine.op == "LABEL"
+            if not lineIsLabel: 
+                lastLineIsLabel = lineIsLabel
+                continue
+
+            labelNum = IRLine.lineSplit[1]
+            if lastLineIsLabel and lineIsLabel:
+                labelsDict[labelNum] = lastLabelNum
+            elif lineIsLabel:
+                lastLabelNum = labelNum
+
+            lastLineIsLabel = lineIsLabel
+
+        for IRLine in IRLines:
+            lineIsLabel = IRLine.op == "LABEL"
+            if lineIsLabel:
+                if IRLine.lineSplit[1] in labelsDict.keys():
+                    continue
+
+            if IRLine.op in Optimizer.opsComparison:
+                if IRLine.lineSplit[3] in labelsDict.keys():
+                    IRLine.lineSplit[3] = labelsDict[IRLine.lineSplit[3]]
+                    IRLine.line = " ".join(IRLine.lineSplit)
+            elif IRLine.op == "JUMP":
+                if IRLine.lineSplit[1] in labelsDict.keys():
+                    IRLine.lineSplit[1] = labelsDict[IRLine.lineSplit[1]]
+                    IRLine.line = " ".join(IRLine.lineSplit)
+
+            newIRLines.append(IRLine)
+
+        return newIRLines
 
 
     def removeUnnecessaryConditions(self, IRLines):
@@ -97,7 +139,7 @@ class Optimizer():
                     continue
 
 
-            if IRLine.op in self.opsComparison:
+            if IRLine.op in Optimizer.opsComparison:
                 opr1      = IRLine.lineSplit[1]
                 opr2      = IRLine.lineSplit[2]
                 labelName = IRLine.lineSplit[3]
@@ -483,7 +525,7 @@ class Optimizer():
                         invalidate(splitline[3])
 
 
-            # if IRLine.op in self.opsComparison and len(tempDicts) > 0:
+            # if IRLine.op in Optimizer.opsComparison and len(tempDicts) > 0:
             #     oldDict = tempDicts[-1][1]
             #     newStoreLines = compareDicts(oldDict, regConstantDict)
             #     currLine = newIRLines.pop()
@@ -518,7 +560,7 @@ class Optimizer():
             #     print(IRLine.line)
 
 
-            # if IRLine.op in self.opsComparison and IRLine.lineSplit[3] in ignoreSetsIf.keys():
+            # if IRLine.op in Optimizer.opsComparison and IRLine.lineSplit[3] in ignoreSetsIf.keys():
             #     tempDicts.append((IRLine.lineSplit[3], regConstantDict.copy()))
 
                 
