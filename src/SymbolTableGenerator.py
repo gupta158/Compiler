@@ -133,12 +133,14 @@ class SymbolTableGenerator(LittleExprListener):
                 functDeclNode.StmtListNode = self.ASTStack.pop()
 
         # print(functDeclNode.printInOrder())
-        self.allCode += functDeclNode.generateCode().replace("LINK", "LINK {0} {1}".format(self.localNum-1, self.paramNum-1))
+        functCode = functDeclNode.generateCode().replace("LINK", "LINK {0} {1}".format(self.localNum-1, self.paramNum-1))
         self.paramNum  = 1
         self.localNum  = 1
         AST.tempRegNum = 1
 
-
+        functOptimizer = Optimizer(functCode)
+        functCode = functOptimizer.optimize()
+        self.allCode += functCode
 
         return
 
