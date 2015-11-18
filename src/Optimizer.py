@@ -25,6 +25,9 @@ class Optimizer():
             IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             IRLines = self.removeRedundantLabels(IRLines)
 
+            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = self.substituteIncDec(IRLines)
+
             # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
             # IRLines = self.checkConstants(IRLines)
 
@@ -62,6 +65,67 @@ class Optimizer():
         # print(";After reduce")
         # print(self.createNewIR(IRLines))
         return self.createNewIR(IRLines)
+
+
+    def substituteIncDec(self, IRLines):
+        newIRLines    = []
+        store1Line    = False
+        storeLineTemp = -1
+        subLine       = False
+        addLine       = False
+        opLineVar     = -1
+        opLineTemp    = -1
+
+        # ;STOREI 1 $T5
+        # ;SUBI i $T5 $T6
+        # ;STOREI $T6 i
+        for IRLine in IRLines:
+            lineIsFinalStore = (IRLine.op == "STOREI") and (IRLine.lineSplit[1] == opLineTemp) and (IRLine.lineSplit[2] == opLineVar)
+            if store1Line and addLine and lineIsFinalStore:
+                newIRLines.pop()
+                newIRLines.pop()
+                newIRLines.append(IRLineObject("INCI {0}".format(IRLine.lineSplit[2])))
+                continue
+
+            elif store1Line and subLine and lineIsFinalStore:
+                newIRLines.pop()
+                newIRLines.pop()
+                newIRLines.append(IRLineObject("DECI {0}".format(IRLine.lineSplit[2])))
+                continue
+
+
+            if IRLine.op == "ADDI":
+                if store1Line:
+                    if IRLine.lineSplit[2] == storeLineTemp:
+                        opLineVar = IRLine.lineSplit[1]
+                        opLineTemp = IRLine.lineSplit[3]
+                        addLine = True
+                    else:
+                        store1Line = False
+
+            elif IRLine.op == "SUBI":
+                if store1Line:
+                    if IRLine.lineSplit[2] == storeLineTemp:
+                        opLineVar = IRLine.lineSplit[1]
+                        opLineTemp = IRLine.lineSplit[3]
+                        subLine = True
+                    else:
+                        store1Line = False
+            elif IRLine.op == "STOREI" and IRLine.lineSplit[1] == "1":
+                store1Line = True
+                storeLineTemp = IRLine.lineSplit[2]
+
+            else:
+                store1Line = False
+                subLine    = False
+                addLine    = False
+
+            newIRLines.append(IRLine)
+
+
+
+
+        return newIRLines
 
 
     def removeRedundantLabels(self, IRLines):

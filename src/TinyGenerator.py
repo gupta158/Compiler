@@ -22,6 +22,8 @@ class TinyGenerator():
     def generate(self):
         stmtList = self.IRcode.split("\n")
         switcher = {
+                "INCI": self.inci,
+                "DECI": self.deci,
                 "ADDI": self.addi,
                 "ADDF": self.addf,
                 "SUBI": self.subi,
@@ -99,6 +101,64 @@ class TinyGenerator():
             self.tempNum += 1
             self.registerAllocate(tempName)
             return tempName
+
+    def incDecOperandSetup(self, op1):
+        opmrl_op1 = ""
+        opmrl_op2 = ""
+        reg_op2   = ""
+        op1Allocated = False
+
+        if op1.replace(".", "").replace("-", "").isdigit():
+            opmrl_op1 = op1
+        elif not op1.startswith("$"):
+            opmrl_op1 = op1
+            self.declDict[opmrl_op1] = ""
+        elif op1.startswith("$L"):
+            opmrl_op1 = op1.replace("L", "-")
+        elif op1.startswith("$P"):
+            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        elif op1.startswith("$R"):
+            opmrl_op1 = "$" + str(6 + self.parameters)
+        else:
+            opAllocated = self.registerAllocate(op1)
+            opmrl_op1 = "r{0}".format(self.regDict[op1])
+
+        self.registerAllocate(op1)
+        reg_op2 = "r{0}".format(self.regDict[op1])
+
+        if opmrl_op1 in self.writeVals.keys():
+            reg_op2 = "r{0}".format(self.writeVals[opmrl_op1])
+            self.regDict[result] = self.writeVals[opmrl_op1]
+            self.writeVals.pop(opmrl_op1)
+        else:
+            self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
+
+        return reg_op2, opmrl_op1
+
+    def inci(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        code = []
+
+        reg_op2, opmrl_op1 = self.incDecOperandSetup(op1)
+        code.append("inci {0}".format(reg_op2))
+        if not opmrl_op1.startswith("r"):
+            code.append("move {0} {1}".format(reg_op2, opmrl_op1))
+        self.tinyCode += "\n".join(code) + "\n"
+        return
+
+    def deci(self, IRLine):
+        lineSplit = IRLine.split(" ")
+        op1 = lineSplit[1]
+        code = []
+
+        reg_op2, opmrl_op1 = self.incDecOperandSetup(op1)
+        code.append("deci {0}".format(reg_op2))
+        if not opmrl_op1.startswith("r"):
+            code.append("move {0} {1}".format(reg_op2, opmrl_op1))
+        self.tinyCode += "\n".join(code) + "\n"
+
+        return
 
     def mathOperandSetup(self, op1, op2, result, orderMatters):
         opmrl_op1 = ""
