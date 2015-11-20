@@ -440,7 +440,7 @@ class Optimizer():
             lineIsMove = line.op in ["STOREI", "STOREF"]
             if lineIsMove and line.lineSplit[1] == line.lineSplit[2]:
                 continue
-            if lastWasMove and lineIsMove and line.lineSplit[1].startswith("$") and lastlinesplit[2] == line.lineSplit[1]:
+            if lastWasMove and lineIsMove and line.lineSplit[1].startswith("$T") and lastlinesplit[2] == line.lineSplit[1]:
                 simpIRLines[-1].removeTemp(line.lineSplit[1], line.lineSplit[2])
                 #simpIRLines.append(line)
             else:
@@ -817,7 +817,7 @@ class IRLineObject():
         self.lineSplit = self.line.rstrip().split(" ")
         self.op = self.lineSplit[0]
         for i in self.lineSplit:
-            if i.startswith("$"):
+            if i.startswith("$T"):
                 self.Regs.append(i)
 
     def updateLine(self, reg, newReg):
