@@ -14,7 +14,7 @@ class TempReg():
 class AST():
     tempRegNum = 1
     codeLabelNum = 1
-    
+    functReturns = {}
     #nodeType
     # INTLITERAL    => 1
     # FLOATLITERAL  => 2
@@ -98,7 +98,7 @@ class ASTMath(AST):
 
     def generateSelfCode(self, lCode, rCode):
         newCode = ""    
-            
+
         if(self.Left.nodeType == NODETYPE.INTLITERAL):
             self.nodeType = NODETYPE.INTLITERAL
             if(self.opcode == MATHOP.ADD):
@@ -593,6 +593,8 @@ class ASTFunctCall(AST):
         print("FUNCTCALL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
 
     def generateCode(self):
+        self.nodeType = AST.functReturns[self.functName]
+
         self.setupNode()
 
         jsrCode       = ""
@@ -634,8 +636,10 @@ class ASTFunctCall(AST):
 
 class ASTFunctDecl(AST):
   
-    def __init__(self, functName, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
+    def __init__(self, functName, localVars, paramVars, value=None, nodeType=None, LRType=None, code=None, tempReg=None ):
         self.functName = functName
+        self.localVars = localVars
+        self.paramVars = paramVars
         self.StmtListNode = None
         self.FunctLabelNode  = ASTLabel(functName)
         self.StmtListNode = None
@@ -648,7 +652,7 @@ class ASTFunctDecl(AST):
     def generateSelfCode(self, lCode, rCode):
         functLabelCode = self.FunctLabelNode.generateCode()
         stmtListCode =  ""
-        linkCode = "LINK\n"
+        linkCode = "LINK {0} {1}\n".format(self.localVars, self.paramVars)
         returnCode = ""
         if self.StmtListNode is not None:
             stmtListCode = self.StmtListNode.generateCode()

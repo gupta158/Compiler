@@ -22,6 +22,8 @@ class SymbolTableGenerator(LittleExprListener):
         self.paramNum = 1
         self.localNum = 1
         self.declType = "GLOBAL"
+        self.functReturns = {}
+        self.functNodeList = []
 
 	# Enter a parse tree produced by LittleExprParser#program.
     def enterProgram(self, ctx:LittleExprParser.ProgramContext):
@@ -34,6 +36,13 @@ class SymbolTableGenerator(LittleExprListener):
         #print("\n".join(self.printSymbolTable))
         self.symbolTable.pop()
         #print(self.allCode)
+        AST.functReturns = self.functReturns
+        for functNode in self.functNodeList:
+            AST.tempRegNum = 1
+            functCode = functNode.generateCode()
+            functOptimizer = Optimizer(functCode)
+            functCode = functOptimizer.optimize()
+            self.allCode += functCode
 
         self.tinyGenerator = TinyGenerator(self.allCode)
         self.tinyGenerator.generate()
@@ -126,21 +135,31 @@ class SymbolTableGenerator(LittleExprListener):
     def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
         self.symbolTable.pop()
         identifier = ctx.identifier().getText()
-        functDeclNode = ASTFunctDecl(identifier)
+        returnType = ctx.any_type().getText()
+        functDeclNode = ASTFunctDecl(identifier, self.localNum-1, self.paramNum-1)
 
         if ctx.func_body() is not None and ctx.func_body().getText():
             if ctx.func_body().stmt_list() is not None and ctx.func_body().stmt_list().getText():
                 functDeclNode.StmtListNode = self.ASTStack.pop()
 
         # print(functDeclNode.printInOrder())
-        functCode = functDeclNode.generateCode().replace("LINK", "LINK {0} {1}".format(self.localNum-1, self.paramNum-1))
+        # functCode = functDeclNode.generateCode()#.replace("LINK", "LINK {0} {1}".format(self.localNum-1, self.paramNum-1))
         self.paramNum  = 1
         self.localNum  = 1
         AST.tempRegNum = 1
 
-        functOptimizer = Optimizer(functCode)
-        functCode = functOptimizer.optimize()
-        self.allCode += functCode
+        if returnType == "FLOAT":
+            self.functReturns[identifier] = NODETYPE.FLOATLITERAL
+        elif returnType == "INT":
+            self.functReturns[identifier] = NODETYPE.INTLITERAL
+
+        self.functNodeList.append(functDeclNode)
+
+        # print(functDeclNode.printInOrder())
+        # functOptimizer = Optimizer(functCode)
+        # functCode = functOptimizer.optimize()
+        # self.allCode += functCode
+
 
         return
 
@@ -385,7 +404,7 @@ class SymbolTableGenerator(LittleExprListener):
         if int(ctx.getChildCount()) == 0:
             return
         mulopNode   = self.ASTStack.pop()       
-        postFixExpr = self.ASTStack.pop()       
+        postFixExpr = self.ASTStack.pop()      
         if ctx.factor_prefix() is not None and ctx.factor_prefix().getText():
             factorPrefix = self.ASTStack.pop() 
             factorPrefix.Right = postFixExpr
