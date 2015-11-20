@@ -557,6 +557,8 @@ class SymbolTableGenerator(LittleExprListener):
                 self.allCode += strCode
 
         elif declType == "LOCAL":
+            if self.localNum != 1:
+                self.localNum = self.getNextLocalNum()
             varName = "$L{0}".format(self.localNum)
             self.localNum += 1
             self.symbolTable[-1][identifier] = (varType, value, varName)
@@ -566,6 +568,17 @@ class SymbolTableGenerator(LittleExprListener):
             self.paramNum += 1
             self.symbolTable[-1][identifier] = (varType, value, varName)
 
+    # Get the next local variable
+    def getNextLocalNum(self):
+        maxLocal = 0
+        elementsOnStack = len(self.symbolTable)
+        for i in range(1, elementsOnStack+1):
+            for key in self.symbolTable[-1 * i].keys():
+                varName = self.symbolTable[-1*i][key][2]
+                if varName.startswith("$L"):
+                    if int(varName[2:]) > maxLocal:
+                        maxLocal = int(varName[2:])
+        return maxLocal + 1
 
     # Print symbol table stack
     def printSymbolTableStack(self):
