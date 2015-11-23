@@ -1,0 +1,15 @@
+tiny
+tinyNew.C
+temp_*
+tempDir/*
+src/LittleExpr.tokens
+src/LittleExprLexer.py
+src/LittleExprLexer.tokens
+src/LittleExprListener.py
+src/LittleExprParser.py
+src/__pycache__/
+CompilerTesting/logs
+lib
+venv
+archiveTestCases
+tiny4regs.C
