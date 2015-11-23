@@ -19,10 +19,10 @@ class Utility:
     SCRIPTPATH = str(Path(__file__).parents[1])
 
     TESTCASESPATH = SCRIPTPATH + "/testcases/step6/input"
-    GOLDCOMPILERPATH = SCRIPTPATH + "/goldCompilers/step6/step6.jar"
+    GOLDCOMPILERPATH = SCRIPTPATH + "/goldCompilers/step7/step7.jar"
     ANTLRPATH = SCRIPTPATH + "/goldCompilers/antlr.jar"
     TINYPATH = SCRIPTPATH + "/tiny"
-    TINYSOURCEPATH = SCRIPTPATH + "/tinyNew.C"
+    TINYSOURCEPATH = SCRIPTPATH + "/tiny4Regs.C"
     CONFIGFILE = SCRIPTPATH + "/config.json"
     BASEOUTPUTDIR = SCRIPTPATH + "/output/"
     BASELOGDIR = SCRIPTPATH + "/logs/"

@@ -8,7 +8,7 @@ src/LittleExprLexer.tokens
 src/LittleExprListener.py
 src/LittleExprParser.py
 src/__pycache__/
-CompilerTesting/logs
+CompilerTesting/**
 lib
 venv
 archiveTestCases
