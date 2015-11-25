@@ -78,13 +78,15 @@ class AST():
         self.code = ""
         if(self.LRType == LRTYPE.RTYPE):
             if(self.nodeType == NODETYPE.FLOATLITERAL):
-                self.code = "STOREF {0} $T{1}\n".format(self.value, AST.tempRegNum)
-                self.tempReg = "$T{0}".format(AST.tempRegNum)
-                AST.tempRegNum += 1
+                # self.code = "STOREF {0} $T{1}\n".format(self.value, AST.tempRegNum)
+                # self.tempReg = "$T{0}".format(AST.tempRegNum)
+                # AST.tempRegNum += 1
+                self.tempReg = self.value
             elif(self.nodeType == NODETYPE.INTLITERAL):
-                self.code = "STOREI {0} $T{1}\n".format(self.value, AST.tempRegNum)
-                self.tempReg = "$T{0}".format(AST.tempRegNum)
-                AST.tempRegNum += 1
+                # self.code = "STOREI {0} $T{1}\n".format(self.value, AST.tempRegNum)
+                # self.tempReg = "$T{0}".format(AST.tempRegNum)
+                # AST.tempRegNum += 1
+                self.tempReg = self.value
         return self.code
         
 

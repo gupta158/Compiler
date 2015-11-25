@@ -2,6 +2,7 @@ from antlr4 import *
 from LittleExprParser import LittleExprParser
 from LittleExprListener import LittleExprListener
 from AST import *
+from IR import *
 import copy
 
 #TODO : a = 20 -> 1 move
@@ -17,54 +18,54 @@ class Optimizer():
 
     def optimize(self):
         lines = self.IRcode.rstrip().split("\n")
-        IRLines = self.CreateLineObjects(lines)
+        IRLines = IRLinesArray.CreateLineObjects(lines)
 
         while 1:
-            oldIR = self.createNewIR(IRLines)
+            oldIR = IRLinesArray.createIRString(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
             IRLines = self.removeRedundantLabels(IRLines)
 
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
             IRLines = self.substituteIncDec(IRLines)
 
-            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
             # IRLines = self.checkConstants(IRLines)
 
-            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
             # IRLines = self.CSE(IRLines)
             
-            IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+            IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
             IRLines = self.simplifyMoves(IRLines)
 
-            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))            
             # IRLines = self.reuseRegisters(IRLines)
 
             # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            # print(self.createNewIR(IRLines))
-            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # print(IRLinesArray.createIRString(IRLines))
+            # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))            
             # IRLines = self.removeUnecessaryStores(IRLines)
                         
             # print(";After reduce")
-            # print(self.createNewIR(IRLines))
+            # print(IRLinesArray.createIRString(IRLines))
 
-            # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))            
+            # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))            
             # IRLines = self.removeUnnecessaryConditions(IRLines)
 
-            if self.createNewIR(IRLines) == oldIR:
+            if IRLinesArray.createIRString(IRLines) == oldIR:
                 break   
 
 
         # print(";AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        # print(self.createNewIR(IRLines))
-        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        # print(IRLinesArray.createIRString(IRLines))
+        # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
         # IRLines = self.reduceRegisters(IRLines)
 
-        # IRLines = self.CreateLineObjects(self.createNewIR(IRLines).rstrip().split("\n"))
+        # IRLines = IRLinesArray.CreateLineObjects(IRLinesArray.createIRString(IRLines).rstrip().split("\n"))
         # IRLines = self.mapMemoryToRegisters(IRLines)
         # print(";After reduce")
-        # print(self.createNewIR(IRLines))
-        return self.createNewIR(IRLines)
+        # print(IRLinesArray.createIRString(IRLines))
+        return IRLinesArray.createIRString(IRLines)
 
 
     def substituteIncDec(self, IRLines):
@@ -379,14 +380,6 @@ class Optimizer():
 
         return IRLines
 
-    def CreateLineObjects(self, lines):
-        IRLines = []
-        count = 0
-        for line in lines:
-            IRLines.append(IRLineObject(line, count))
-            count += 1
-        return IRLines
-
     def markLines(self, IRlines):
         for IRline in IRlines:
             for reg in IRline.Regs:
@@ -457,12 +450,6 @@ class Optimizer():
         for i in self.Regs.keys():
             print("{0}: first: {1}, last: {2}".format(self.Regs[i].regName, self.Regs[i].firstUsed, self.Regs[i].lastUsed))
 
-    def createNewIR(self, IRLines):
-        newIR = ""
-        for i in IRLines:
-            newIR = newIR + i.line + "\n"
-
-        return newIR
 
     def checkConstants(self, IRLines):
         def ifConstant(value):
@@ -596,7 +583,7 @@ class Optimizer():
             #     newIRLines.extend(newStoreLines)
             #     newIRLines.append(currLine)
 
-            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLinesArray.createIRString(newStoreLines))
             #     print(IRLine.line)
 
             # if (IRLine.op == "LABEL" and IRLine.lineSplit[1] == tempDicts[-1][0] and len(tempDicts) > 0 and IRLines[IRLine.lineNum - 1].op != "JUMP"):
@@ -608,7 +595,7 @@ class Optimizer():
             #     regConstantDict = oldDict
 
             #     tempDicts.pop()
-            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLinesArray.createIRString(newStoreLines))
             #     print(IRLine.line)
 
 
@@ -620,7 +607,7 @@ class Optimizer():
             #     newIRLines.append(currLine)
             #     regConstantDict = oldDict
 
-            #     print(self.createNewIR(newStoreLines))
+            #     print(IRLinesArray.createIRString(newStoreLines))
             #     print(IRLine.line)
 
 
@@ -801,34 +788,4 @@ class Register():
         self.firstUsed = firstUsed
         self.lastUsed = lastUsed
         self.lastChanged = -1
-
-
-class IRLineObject():
-
-    def __init__(self, line, lineNum=-1):
-        self.line = line
-        self.Regs = []
-        self.op = ""
-        self.newLine = line
-        self.assignVariables()
-        self.lineNum = lineNum
-
-    def assignVariables(self):
-        self.lineSplit = self.line.rstrip().split(" ")
-        self.op = self.lineSplit[0]
-        for i in self.lineSplit:
-            if i.startswith("$T"):
-                self.Regs.append(i)
-
-    def updateLine(self, reg, newReg):
-        self.line = self.line.replace(reg, newReg, 1)
-        #numReg = self.Regs.count(reg)
-        #for i in range(0, numReg):
-        self.Regs = [x if (x != reg) else newReg for x in self.Regs]
-
-    def removeTemp(self, reg, replacement):
-        self.lineSplit[2] = replacement
-        self.line = " ".join(self.lineSplit)
-        # self.line = self.line.replace(reg, replacement)
-        self.Regs.remove(reg)
 

@@ -4,6 +4,7 @@ from LittleExprListener import LittleExprListener
 from AST import *
 from TinyGenerator import *
 from Optimizer import *
+from CFG import *
 
 
 #TODO string GLOBALS and LOCALS
@@ -42,6 +43,13 @@ class SymbolTableGenerator(LittleExprListener):
             functCode = functNode.generateCode()
             functOptimizer = Optimizer(functCode)
             functCode = functOptimizer.optimize()
+
+            functCFG = CFG(functCode)
+            functCFG.populateNodeInfo()
+            functCFG.removeLinesWithNoPredecessors()
+
+            # functCFG.printGraph()
+            functCode = functCFG.getCode()
             self.allCode += functCode
 
         self.tinyGenerator = TinyGenerator(self.allCode)

@@ -18,11 +18,11 @@ class Utility:
 
     SCRIPTPATH = str(Path(__file__).parents[1])
 
-    TESTCASESPATH = SCRIPTPATH + "/testcases/step6/input"
+    TESTCASESPATH = SCRIPTPATH + "/testcases/step7/input"
     GOLDCOMPILERPATH = SCRIPTPATH + "/goldCompilers/step7/step7.jar"
     ANTLRPATH = SCRIPTPATH + "/goldCompilers/antlr.jar"
     TINYPATH = SCRIPTPATH + "/tiny"
-    TINYSOURCEPATH = SCRIPTPATH + "/tiny4Regs.C"
+    TINYSOURCEPATH = SCRIPTPATH + "/tiny4regs.C"
     CONFIGFILE = SCRIPTPATH + "/config.json"
     BASEOUTPUTDIR = SCRIPTPATH + "/output/"
     BASELOGDIR = SCRIPTPATH + "/logs/"
@@ -35,8 +35,8 @@ class Utility:
 
     GOLDTINYOUTPUT = TINYOUTPUT + "gold/"
     ACTUALTINYOUTPUT = TINYOUTPUT + "actual/"
-    STEPS = ["4", "5", "6"]
-    CURRSTEP = "6"
+    STEPS = ["4", "5", "6", "7"]
+    CURRSTEP = "7"
 
     CONFIGKEYS = ["java", "display", "verbose"]
     POSSIBLEDISPLAYOPTIONS = ["diff", "info", "all"]
