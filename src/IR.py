@@ -45,3 +45,10 @@ class IRLinesArray():
             count += 1
         return IRLines
 
+
+
+class OpDefinitions():
+    comparisonOps = ["GEI", "GEF", "LEI", "LEF", "LTI", "LTF", "GTI", "GTF", "EQI", "EQF", "NEI", "NEF"]
+    unconditionalJumpOps = ["JUMP", "JSR"]    
+    mathIntOps   = ["ADDI", "SUBI", "MULTI", "DIVI"]
+    mathFloatOps = ["ADDD", "SUBF", "MULTF", "DIVF"]

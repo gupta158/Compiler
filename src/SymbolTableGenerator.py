@@ -35,7 +35,6 @@ class SymbolTableGenerator(LittleExprListener):
 	# Exit a parse tree produced by LittleExprParser#program.
     def exitProgram(self, ctx:LittleExprParser.ProgramContext):
         #print("\n".join(self.printSymbolTable))
-        self.symbolTable.pop()
         #print(self.allCode)
         AST.functReturns = self.functReturns
         for functNode in self.functNodeList:
@@ -47,10 +46,14 @@ class SymbolTableGenerator(LittleExprListener):
             functCFG = CFG(functCode)
             functCFG.populateNodeInfo()
             functCFG.removeLinesWithNoPredecessors()
+            functCFG.runLivenessAnalysis([var for var in self.symbolTable[-1].keys() if self.symbolTable[-1][var][0] != "STRING"])
 
+            functCFG.printGraphWithNodeLists()
             # functCFG.printGraph()
-            functCode = functCFG.getCode()
+            # functCode = functCFG.getCode()
             self.allCode += functCode
+
+        self.symbolTable.pop()
 
         self.tinyGenerator = TinyGenerator(self.allCode)
         self.tinyGenerator.generate()
