@@ -6,10 +6,12 @@ class CFG():
         self.stmtList = functCode.rstrip('\n').split('\n')
         self.CFGNodeList = []
         self.labelsLineNum = {}
+        self.leaders = []
         for lineNum in range(0, len(self.stmtList)):
             stmt = self.stmtList[lineNum]
             cfgNode = (CFGNode(stmt, lineNum))
             self.CFGNodeList.append(cfgNode)
+
 
     def removeLinesWithNoPredecessors(self):
         nodesToRemove = []
@@ -26,6 +28,7 @@ class CFG():
 
         self.fixLineNumbers()
         self.populateNodeInfo()
+
 
     def getCode(self):
         return IRLinesArray.createIRString(self.CFGNodeList)
@@ -50,6 +53,7 @@ class CFG():
             for successiveNodeLineNum in cfgNode.successors:
                 self.CFGNodeList[successiveNodeLineNum].predecessors.append(cfgNode.lineNum)
 
+
     def emptyNodeLists(self):
         for cfgNode in self.CFGNodeList:
             cfgNode.genList      = []
@@ -57,6 +61,7 @@ class CFG():
             cfgNode.inList       = []
             cfgNode.outList      = []
             cfgNode.changed      = True
+
 
     def runLivenessAnalysis(self, globalVariables):
         self.emptyNodeLists()
@@ -97,23 +102,27 @@ class CFG():
 
 
         changed = True
+        nextWorklist = range(len(self.CFGNodeList)-1, -1, -1)
+        worklist = range(len(self.CFGNodeList)-1, -1, -1)
         while changed:
             changed = False
-            for cfgNodeIndex in range(len(self.CFGNodeList)-1, -1, -1):
+            worklist = list(nextWorklist)
+            nextWorklist = []
+            for cfgNodeIndex in worklist:
                 cfgNode = self.CFGNodeList[cfgNodeIndex]
-                oldOutList = cfgNode.outList            
-                oldInList = cfgNode.inList          
+                oldOutList = list(cfgNode.outList)            
+                oldInList = list(cfgNode.inList)          
 
                 cfgNode.outList = []
                 cfgNode.inList = []
                 for successorIndex in cfgNode.successors:
                     successorNode = self.CFGNodeList[successorIndex]
-                    print("START nodeNum = {0}, successorNodenum = {1}".format(cfgNode.lineNum, successorNode.lineNum))
-                    print(cfgNode.outList)
-                    print(successorNode.inList)
+                    # print("START nodeNum = {0}, successorNodenum = {1}".format(cfgNode.lineNum, successorNode.lineNum))
+                    # print(cfgNode.outList)
+                    # print(successorNode.inList)
                     cfgNode.outList = CFGNode.unionLists(cfgNode.outList, successorNode.inList)
-                    print(cfgNode.outList)
-                    print("END")
+                    # print(cfgNode.outList)
+                    # print("END")
 
                 if cfgNode.op == "RET":
                     cfgNode.outList.extend(globalVariables)
@@ -123,10 +132,30 @@ class CFG():
                     if killVar in cfgNode.outList: 
                         cfgNode.inList.remove(killVar)
                 cfgNode.inList = CFGNode.unionLists(cfgNode.inList, cfgNode.genList)
-                if not changed:
-                    changed = len(set(cfgNode.inList).intersection(oldInList)) != len(cfgNode.inList)
-                if not changed:
-                    changed = len(set(cfgNode.outList).intersection(oldOutList)) != len(cfgNode.outList)
+                nodeChanged = len(set(cfgNode.inList).intersection(oldInList)) != len(cfgNode.inList)
+                if nodeChanged:
+                    changed = True
+                    nextWorklist.append(cfgNode.lineNum)
+                    nextWorklist = CFGNode.unionLists(nextWorklist, cfgNode.predecessors)
+
+
+    def setLeaders(self):
+        self.leaders = []
+        for cfgNode in self.CFGNodeList:
+            if (len(cfgNode.predecessors) != 1):
+                self.leaders.append(cfgNode.lineNum)
+                continue
+            elif (len(cfgNode.successors) > 1):
+                self.leaders.append(cfgNode.lineNum + 1)
+                continue
+            if len(cfgNode.successors) == 1:
+                if cfgNode.successors[0] != (cfgNode.lineNum + 1):
+                    self.leaders.append(cfgNode.lineNum + 1)
+                    continue
+            if len(cfgNode.predecessors) == 1:
+                if cfgNode.predecessors[0] != (cfgNode.lineNum - 1):
+                    self.leaders.append(cfgNode.lineNum)
+                    continue
 
 
     def printGraphWithNodeLists(self):
@@ -134,12 +163,26 @@ class CFG():
             print("Node {0}, stmt = {1} , predecessors = {2} , successors = {3}".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
             print("\t\t genList = {0} , killList = {1}".format(cfgNode.genList, cfgNode.killList))
             print("\t\t inList = {0} , outList = {1}".format(cfgNode.inList, cfgNode.outList))
+        print("leaders")
+        print(self.leaders)
+        print("labelsLineNum")
+        print(self.labelsLineNum)
+
+        for cfgNode in self.CFGNodeList:
+            if cfgNode.lineNum in self.leaders:
+                print("")
+            print(cfgNode.line)
 
         return          
+
 
     def printGraph(self):
         for cfgNode in self.CFGNodeList:
             print("Node {0}, stmt = {1} , predecessors = {2} , successors = {3}  ".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
+        print("leaders")
+        print(self.leaders)
+        print("labelsLineNum")
+        print(self.labelsLineNum)
         return              
 
 

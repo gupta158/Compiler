@@ -37,6 +37,8 @@ class SymbolTableGenerator(LittleExprListener):
         #print("\n".join(self.printSymbolTable))
         #print(self.allCode)
         AST.functReturns = self.functReturns
+
+        CFGList = []
         for functNode in self.functNodeList:
             AST.tempRegNum = 1
             functCode = functNode.generateCode()
@@ -47,14 +49,14 @@ class SymbolTableGenerator(LittleExprListener):
             functCFG.populateNodeInfo()
             functCFG.removeLinesWithNoPredecessors()
             functCFG.runLivenessAnalysis([var for var in self.symbolTable[-1].keys() if self.symbolTable[-1][var][0] != "STRING"])
-
+            functCFG.setLeaders()
             functCFG.printGraphWithNodeLists()
             # functCFG.printGraph()
             # functCode = functCFG.getCode()
+            CFGList.append(functCFG)
             self.allCode += functCode
 
         self.symbolTable.pop()
-
         self.tinyGenerator = TinyGenerator(self.allCode)
         self.tinyGenerator.generate()
 
