@@ -171,7 +171,7 @@ class TinyGenerator():
 
         return tinyVar
 
-    def ensureRegister(self, variable, doneWithLine):
+    def ensureRegister(self, variable, doneWithLine=0):
         print("; ensuring {0}".format(variable))
         for register in self.Registers:
             if register.variable == variable and register.valid:
@@ -222,7 +222,7 @@ class TinyGenerator():
         return
     
 
-    def chooseRegToFree(self, doneWithLine):
+    def chooseRegToFree(self, doneWithLine=0):
         regsToUse = [0,1,2,3]
         regsToRemove = []
         if not doneWithLine:
@@ -276,12 +276,12 @@ class TinyGenerator():
                     return regsToUse[0]
             lineToCheck += 1
 
-    def chooseAndFreeRegister(self, doneWithLine):
+    def chooseAndFreeRegister(self, doneWithLine=0):
         regNum = self.chooseRegToFree(doneWithLine)
         self.freeRegister("r{0}".format(regNum))
         return regNum
 
-    def registerAllocate(self, varName, doneWithLine):
+    def registerAllocate(self, varName, doneWithLine=0):
         print("; starting allocation of {0}".format(varName))
         for register in self.Registers:
             if not register.valid: 
@@ -333,7 +333,7 @@ class TinyGenerator():
         else:
             # opAllocated = self.registerAllocate(op1)
             # opmrl_op1 = "r{0}".format(self.regDict[op1])
-            opmrl_op1 = self.ensureRegister(op1)
+            opmrl_op1 = self.ensureRegister(op1, 0)
 
         # self.registerAllocate(op1)
         # reg_op2 = "r{0}".format(self.regDict[op1])
@@ -665,54 +665,69 @@ class TinyGenerator():
         isReg1 = False
         isReg2 = False
 
+        if (not op1.replace(".", "").replace("-", "").isdigit()) and (op2.replace(".", "").replace("-", "").isdigit()):
+            flipped = True
+            op2, op1 = op1, op2
+
         if op1.replace(".", "").replace("-", "").isdigit():
             opmrl_op1 = op1
-        elif not op1.startswith("$"):
-            opmrl_op1 = op1
-            self.declDict[opmrl_op1] = ""
-        elif op1.startswith("$L"):
-            opmrl_op1 = op1.replace("L", "-")
-        elif op1.startswith("$P"):
-            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
-        elif op1.startswith("$R"):
-            opmrl_op1 = "$" + str(6 + self.parameters)
+        # elif not op1.startswith("$"):
+        #     opmrl_op1 = op1
+        #     self.declDict[opmrl_op1] = ""
+        # elif op1.startswith("$L"):
+        #     opmrl_op1 = op1.replace("L", "-")
+        # elif op1.startswith("$P"):
+        #     opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        # elif op1.startswith("$R"):
+        #     opmrl_op1 = "$" + str(6 + self.parameters)
         else:
-            opAllocated = self.registerAllocate(op1)
-            opmrl_op1 = "r{0}".format(self.regDict[op1])
+            # opAllocated = self.registerAllocate(op1)
+            # opmrl_op1 = "r{0}".format(self.regDict[op1])
+            opmrl_op1 = self.ensureRegister(op1, 0)
             isReg1 = True
 
         if op2.replace(".", "").replace("-", "").isdigit():
-            opmrl_op2 = op2
-        elif not op2.startswith("$"):
-            opmrl_op2 = op2
-            self.declDict[opmrl_op2] = ""
-        elif op2.startswith("$L"):
-            opmrl_op2 = op2.replace("L", "-")
-        elif op2.startswith("$P"):
-            opmrl_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
-        elif op2.startswith("$R"):
-            opmrl_op2 = "$" + str(6 + self.parameters)
+            # opmrl_op2 = op2
+            opmr_op2 = self.temporaryAllocate()
+        # elif not op2.startswith("$"):
+        #     opmrl_op2 = op2
+        #     self.declDict[opmrl_op2] = ""
+        # elif op2.startswith("$L"):
+        #     opmrl_op2 = op2.replace("L", "-")
+        # elif op2.startswith("$P"):
+        #     opmrl_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+        # elif op2.startswith("$R"):
+        #     opmrl_op2 = "$" + str(6 + self.parameters)
         else:
-            self.registerAllocate(op2)
-            opmrl_op2 = "r{0}".format(self.regDict[op2])
+            opmrl_op2 = self.ensureRegister(op2, 0)
+            # self.registerAllocate(op2)
+            # opmrl_op2 = "r{0}".format(self.regDict[op2])
             isReg2 = True
 
-        if isReg1 and not isReg2:
-            temp = opmrl_op2
-            opmrl_op2 = opmrl_op1
-            opmrl_op1 = temp
-            flipped = True
-        elif not isReg2:
-            opmrl_op2 = self.temporaryAllocate()
-            if op2.startswith("$L"):
-                op2 = op2.replace("L", "-")
-            elif op2.startswith("$P"):
-                op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
-            elif op2.startswith("$R"):
-                op2 = "$" + str(6 + self.parameters)
+        regsToTryFree = []
+        if isReg1:
+            regsToTryFree.append(opmrl_op1)
+        if isReg2:
+            regsToTryFree.append(opmrl_op2)
 
-            code.append("move {0} r{1}".format(op2, self.regDict[opmrl_op2]))
-            opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
+        self.freeRegistersIfDead(regsToTryFree)
+
+        # if isReg1 and not isReg2:
+        #     temp = opmrl_op2
+        #     opmrl_op2 = opmrl_op1
+        #     opmrl_op1 = temp
+        #     flipped = True
+        # elif not isReg2:
+        #     opmrl_op2 = self.temporaryAllocate()
+        #     if op2.startswith("$L"):
+        #         op2 = op2.replace("L", "-")
+        #     elif op2.startswith("$P"):
+        #         op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+        #     elif op2.startswith("$R"):
+        #         op2 = "$" + str(6 + self.parameters)
+
+        #     code.append("move {0} r{1}".format(op2, self.regDict[opmrl_op2]))
+        #     opmrl_op2 = "r{0}".format(self.regDict[opmrl_op2])  
 
         if dataType:
             code.append("cmpi {0} {1}".format(opmrl_op1, opmrl_op2))

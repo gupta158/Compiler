@@ -29,6 +29,7 @@ class SymbolTableGenerator(LittleExprListener):
 	# Enter a parse tree produced by LittleExprParser#program.
     def enterProgram(self, ctx:LittleExprParser.ProgramContext):
         self.printSymbolTable.append("Symbol table GLOBAL\r")
+        print("; pushing EnterProg")
         self.symbolTable.append({})
         pass
 
@@ -37,7 +38,6 @@ class SymbolTableGenerator(LittleExprListener):
         #print("\n".join(self.printSymbolTable))
         #print(self.allCode)
         AST.functReturns = self.functReturns
-
 
         globalVars = ([var for var in self.symbolTable[-1].keys() if self.symbolTable[-1][var][0] != "STRING"])
         CFGList = []
@@ -60,6 +60,7 @@ class SymbolTableGenerator(LittleExprListener):
             tinyCode += functTinyGen.generate()
 
         self.symbolTable.pop()
+        print("; popping Prog")
         self.tinyCode = tinyCode
         # self.tinyGenerator = TinyGenerator(self.allCode)
         # self.tinyGenerator.generate()
@@ -70,12 +71,14 @@ class SymbolTableGenerator(LittleExprListener):
 	# Enter a parse tree produced by LittleExprParser#func_decl.
     def enterFunc_decl(self, ctx:LittleExprParser.Func_declContext):
        self.printSymbolTable.append("\nSymbol table {0}\r".format(ctx.getChild(2).getText()))
+       print("; pushing EnterFunc")
        self.symbolTable.append({})
        pass
 
 	# Enter a parse tree produced by LittleExprParser#if_stmt.
     def enterIf_stmt(self, ctx:LittleExprParser.If_stmtContext):
         self.printSymbolTable.append("\nSymbol table BLOCK {0}\r".format(self.block))
+        print("; pushing EnterIf")
         self.symbolTable.append({})
         self.block += 1
         pass
@@ -83,6 +86,8 @@ class SymbolTableGenerator(LittleExprListener):
 	# Enter a parse tree produced by LittleExprParser#else_part.
     def enterElse_part(self, ctx:LittleExprParser.Else_partContext):
         self.symbolTable.pop()  # Pop if block
+        print("; popping EnterElse")
+        print("; pushing EnterElse")
         self.printSymbolTable.append("\nSymbol table BLOCK {0}\r".format(self.block))
         self.symbolTable.append({})
         self.block += 1
@@ -92,6 +97,7 @@ class SymbolTableGenerator(LittleExprListener):
     def exitElse_part(self, ctx:LittleExprParser.Else_partContext):
         if int(ctx.getChildCount()) == 0:
             return
+        print("; poppingElse")
         self.symbolTable.pop()
         pass
 
@@ -151,6 +157,7 @@ class SymbolTableGenerator(LittleExprListener):
     # Exit a parse tree produced by LittleExprParser#func_decl.
     def exitFunc_decl(self, ctx:LittleExprParser.Func_declContext):
         self.symbolTable.pop()
+        print("; poppingFunct")
         identifier = ctx.identifier().getText()
         returnType = ctx.any_type().getText()
         functDeclNode = ASTFunctDecl(identifier, self.localNum-1, self.paramNum-1)
@@ -216,10 +223,16 @@ class SymbolTableGenerator(LittleExprListener):
         ifNode = ASTIf()        
         
         # If else does not exist
-        if ctx.else_part() is None and not ctx.else_part().getText():
+        if ctx.else_part() is None:
+            print("; poppingIF1")
+            self.symbolTable.pop()
+        elif ctx.else_part() is not None and not ctx.else_part().getText():
+            print("; poppingIF2")
             self.symbolTable.pop()
         elif ctx.else_part() is not None and ctx.else_part().getText():
             ifNode.ElseNode = self.ASTStack.pop()
+            # print("; poppingIF")
+            # self.symbolTable.pop()
 
         if ctx.stmt_list() is not None and ctx.stmt_list().getText():
             ifNode.ThenNode = self.ASTStack.pop()
@@ -230,7 +243,7 @@ class SymbolTableGenerator(LittleExprListener):
         ifNode.setupNode()
 
         self.ASTStack.append(ifNode)
-               
+                   
         pass
 
 
