@@ -160,18 +160,18 @@ class CFG():
 
     def printGraphWithNodeLists(self):
         for cfgNode in self.CFGNodeList:
-            print("Node {0}, stmt = {1} , predecessors = {2} , successors = {3}".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
-            print("\t\t genList = {0} , killList = {1}".format(cfgNode.genList, cfgNode.killList))
-            print("\t\t inList = {0} , outList = {1}".format(cfgNode.inList, cfgNode.outList))
-        print("leaders")
-        print(self.leaders)
-        print("labelsLineNum")
-        print(self.labelsLineNum)
+            print(";Node {0}, stmt = {1} , predecessors = {2} , successors = {3}".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
+            print(";\t\t genList = {0} , killList = {1}".format(cfgNode.genList, cfgNode.killList))
+            print(";\t\t inList = {0} , outList = {1}".format(cfgNode.inList, cfgNode.outList))
+        print(";leaders")
+        print(";", self.leaders)
+        print(";labelsLineNum")
+        print(";", self.labelsLineNum)
 
         for cfgNode in self.CFGNodeList:
             if cfgNode.lineNum in self.leaders:
                 print("")
-            print(cfgNode.line)
+            print(";", cfgNode.line)
 
         return          
 

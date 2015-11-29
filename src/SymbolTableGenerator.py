@@ -38,27 +38,31 @@ class SymbolTableGenerator(LittleExprListener):
         #print(self.allCode)
         AST.functReturns = self.functReturns
 
+
+        globalVars = ([var for var in self.symbolTable[-1].keys() if self.symbolTable[-1][var][0] != "STRING"])
         CFGList = []
+        self.tinyGenerator = TinyGenerator(self.allCode, stringInit=1)
+        tinyCode = ""
+        for var in globalVars:
+            tinyCode += "var {0}\n".format(var)
+
+        tinyCode += self.tinyGenerator.generate()
+        tinyCode += "push\npush r0\npush r1\npush r2\npush r3\njsr main\nsys halt\n"
+        
         for functNode in self.functNodeList:
             AST.tempRegNum = 1
             functCode = functNode.generateCode()
             functOptimizer = Optimizer(functCode)
             functCode = functOptimizer.optimize()
 
-            functCFG = CFG(functCode)
-            functCFG.populateNodeInfo()
-            functCFG.removeLinesWithNoPredecessors()
-            functCFG.runLivenessAnalysis([var for var in self.symbolTable[-1].keys() if self.symbolTable[-1][var][0] != "STRING"])
-            functCFG.setLeaders()
-            functCFG.printGraphWithNodeLists()
-            # functCFG.printGraph()
-            # functCode = functCFG.getCode()
-            CFGList.append(functCFG)
+            functTinyGen = TinyGenerator(functCode, globalVariables=globalVars)
             self.allCode += functCode
+            tinyCode += functTinyGen.generate()
 
         self.symbolTable.pop()
-        self.tinyGenerator = TinyGenerator(self.allCode)
-        self.tinyGenerator.generate()
+        self.tinyCode = tinyCode
+        # self.tinyGenerator = TinyGenerator(self.allCode)
+        # self.tinyGenerator.generate()
 
         self.printTinyIR()
         pass
@@ -638,12 +642,12 @@ class SymbolTableGenerator(LittleExprListener):
             print(";Pre optimized code")
             print(";;;IR code")
             print(";;;" + self.allCode.replace("\n", "\n;;;") + "tinycode")  
-            print(";;" + self.tinyGenerator.tinyCode.replace("\n", "\n;;"))
+            print(";;" + self.tinyCode.replace("\n", "\n;;"))
             print(";END OF Pre optimized code")
         else:
             print(";IR code")
             print(";" + self.allCode.replace("\n", "\n;") + "tinycode")  
-            print(self.tinyGenerator.tinyCode)
+            print(self.tinyCode)
         
 
 

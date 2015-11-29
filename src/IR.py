@@ -46,7 +46,6 @@ class IRLinesArray():
         return IRLines
 
 
-
 class OpDefinitions():
     comparisonOps = ["GEI", "GEF", "LEI", "LEF", "LTI", "LTF", "GTI", "GTF", "EQI", "EQF", "NEI", "NEF"]
     unconditionalJumpOps = ["JUMP", "JSR"]    

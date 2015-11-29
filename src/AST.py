@@ -8,8 +8,6 @@ __author__ = 'gupta158, jalliger'
 import sys
 from enum import Enum
 
-class TempReg():
-    regNum = 0
 
 class AST():
     tempRegNum = 1
