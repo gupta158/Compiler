@@ -146,11 +146,11 @@ class CFG():
                 self.leaders.append(cfgNode.lineNum)
                 continue
             elif (len(cfgNode.successors) > 1):
-                self.leaders.append(cfgNode.lineNum + 1)
+                self.leaders.append(cfgNode.lineNum) # old + 1
                 continue
             if len(cfgNode.successors) == 1:
                 if cfgNode.successors[0] != (cfgNode.lineNum + 1):
-                    self.leaders.append(cfgNode.lineNum + 1)
+                    self.leaders.append(cfgNode.lineNum) # old + 1
                     continue
             if len(cfgNode.predecessors) == 1:
                 if cfgNode.predecessors[0] != (cfgNode.lineNum - 1):

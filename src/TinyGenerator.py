@@ -26,7 +26,8 @@ class TinyGenerator():
         self.numLocalParams = 0
         self.numTempParams = 0
         self.tempsSpilledDict = {} # Saves mapping of temp to stack in case of spilling
-        
+        self.stringInit = stringInit # If this code generation is just for the string initialization
+
         # Add 4 registers
         self.Registers = []
         self.Registers.append(RegisterStatus(0))
@@ -105,6 +106,9 @@ class TinyGenerator():
 
         for line in stmtList:
             #print(line)
+            if not self.stringInit:
+                if self.lineNum in self.functCFG.leaders:
+                    self.resetRegisters()
             # Get the function from switcher dictionary
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
@@ -124,6 +128,12 @@ class TinyGenerator():
         return self.tinyCode
 
 
+    def resetRegisters(self):
+        print("; resetting reg allocation")
+        for regNum in range(4):
+            if self.Registers[regNum].valid:
+                self.freeRegister("r{0}".format(regNum))
+
     def removeUnnecessaryMoves(self):
         tinyCodeArray = self.tinyCode.strip().rstrip('\n').split('\n')
         linesToRemove = []
@@ -140,7 +150,7 @@ class TinyGenerator():
         for lineToRemove in linesToRemove:
             tinyCodeArray.remove(lineToRemove)
 
-        self.tinyCode = "\n".join(tinyCodeArray)
+        self.tinyCode = "\n".join(tinyCodeArray) + "\n"
         return
 
 
@@ -421,7 +431,7 @@ class TinyGenerator():
             regsToTryFree.append(opmrl_op2)
 
         reg_op2 = self.registerAllocate(result, doneWithLine=0)
-        self.Registers[int(reg_op2[1])].dirty = 1
+        self.markRegisterDirty(reg_op2)
         self.freeRegistersIfDead(regsToTryFree)
         # self.registerAllocate(result)
         # reg_op2 = "r{0}".format(self.regDict[result])
@@ -626,7 +636,8 @@ class TinyGenerator():
             # opmr_op2 = "r{0}".format(self.regDict[result])
 
         opmr_op2 = self.registerAllocate(result, 1)
-        self.Registers[int(opmr_op2[1])].dirty = 1
+        # self.Registers[int(opmr_op2[1])].dirty = 1
+        self.markRegisterDirty(opmr_op2)
 
         # print("{0}: {1}".format(opmrl_op1, opmr_op2))
         # print(IRLine)
@@ -648,11 +659,14 @@ class TinyGenerator():
         op1 = lineSplit[-1]
         code  = []
 
-        code.append("str {0} {1}".format(op1, result))
+        # code.append("str {0} {1}".format(op1, result))
         if op1.startswith("$L"):
-            self.tinyCode += "\n".join(code) + "\n"
+            # self.tinyCode += "\n".join(code) + "\n"
+            self.tinyCode += "str {0} {1}\n".format(op1, result)
         else:
-            self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
+            self.tinyCode = "str {0} {1}\n".format(op1, result) + self.tinyCode
+            # self.tinyCode = "\n".join(code) + "\n" + self.tinyCode
+
         return
 
     def compOperand(self, op1, op2, dataType):
@@ -825,8 +839,15 @@ class TinyGenerator():
 
         return opmr_op2
 
+    def markRegisterDirty(self, op):
+        self.Registers[int(op[1])].dirty = 1
+        return
+
+
     def readOperandSetup(self, op2, code):
-        return self.registerAllocate(op2, 1)
+        reg_op2 = self.registerAllocate(op2, 1)
+        self.markRegisterDirty(reg_op2)
+        return reg_op2
         # pass
 
     def writeOperandSetup(self, op2, code):
