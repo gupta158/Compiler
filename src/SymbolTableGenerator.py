@@ -244,8 +244,14 @@ class SymbolTableGenerator(LittleExprListener):
         ifNode.setupNode()
 
         self.ASTStack.append(ifNode)
-                   
-        pass
+        if ctx.else_part() is not None and ctx.else_part().getText():
+            if ctx.stmt_list() is not None and ctx.stmt_list().getText():
+                if ctx.else_part().stmt_list() is not None and ctx.else_part().stmt_list().getText():
+                    if ctx.stmt_list().getText() == ctx.else_part().stmt_list().getText():
+                        self.ASTStack.pop()
+                        self.ASTStack.append(ifNode.ThenNode)
+
+        return
 
 
     # Exit a parse tree produced by LittleExprParser#for_stmt.
