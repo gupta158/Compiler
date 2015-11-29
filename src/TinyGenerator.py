@@ -109,7 +109,7 @@ class TinyGenerator():
             #print(line)
             if not self.stringInit:
                 if self.lineNum in self.functCFG.leaders:
-                    self.resetRegisters(keepValid=1)
+                    self.resetRegisters()
             # Get the function from switcher dictionary
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
