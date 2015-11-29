@@ -47,7 +47,8 @@ class SymbolTableGenerator(LittleExprListener):
             tinyCode += "var {0}\n".format(var)
 
         tinyCode += self.tinyGenerator.generate()
-        tinyCode += "push\npush r0\npush r1\npush r2\npush r3\njsr main\nsys halt\n"
+        # tinyCode += "push\npush r0\npush r1\npush r2\npush r3\njsr main\nsys halt\n"
+        tinyCode += "push\njsr main\nsys halt\n"
         
         for functNode in self.functNodeList:
             AST.tempRegNum = 1

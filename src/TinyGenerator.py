@@ -132,9 +132,10 @@ class TinyGenerator():
         print("; resetting reg allocation")
         for regNum in range(4):
             if self.Registers[regNum].valid:
-                self.freeRegister("r{0}".format(regNum))
+                self.freeRegister("r{0}".format(regNum), keepTemporaries=1)
 
     def removeUnnecessaryMoves(self):
+        # print(self.tinyCode)
         tinyCodeArray = self.tinyCode.strip().rstrip('\n').split('\n')
         linesToRemove = []
         for tinyLine in tinyCodeArray:
@@ -199,9 +200,12 @@ class TinyGenerator():
         return variable in self.functCFG.CFGNodeList[self.lineNum].outList
 
 
-    def spillRegister(self, register):
+    def spillRegister(self, register, keepTemporaries=0):
         regNum = int(register[1])
         tinyVar = self.convertIRVarToTinyVar(self.Registers[regNum].variable)
+
+        if self.Registers[regNum].variable.startswith("$T") and keepTemporaries:
+            return
 
         if self.Registers[regNum].variable.startswith("$T"):  
             tempStackVar = self.numLocalParams + 1
@@ -222,11 +226,13 @@ class TinyGenerator():
         return
 
 
-    def freeRegister(self, register):
+    def freeRegister(self, register, keepTemporaries=0):
         regNum = int(register[1])
         print("; freeing {0} with {1}, valid: {2}, dirty: {3}".format(register, self.Registers[regNum].variable, self.Registers[regNum].valid, self.Registers[regNum].dirty))
         if self.Registers[regNum].valid and self.Registers[regNum].dirty and self.checkVariableLive(self.Registers[regNum].variable):
-            self.spillRegister(register)
+            self.spillRegister(register, keepTemporaries=keepTemporaries)
+        if self.Registers[regNum].variable.startswith("$T") and keepTemporaries:  
+            return
         self.Registers[regNum].valid = 0
         self.Registers[regNum].dirty = 0
         return
