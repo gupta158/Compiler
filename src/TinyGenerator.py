@@ -101,15 +101,17 @@ class TinyGenerator():
 
         # code.append("sys halt")
 
-        self.tinyCode += "\n".join(code) + "\n"
+        # self.tinyCode += "\n".join(code) + "\n"
 
         for line in stmtList:
             #print(line)
             # Get the function from switcher dictionary
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
+            print(";", line)
             func(line)
             self.lineNum += 1
+            self.printRegs()
         # print(self.regVals)
 
         # if len(self.declDict) != 0:
@@ -118,12 +120,42 @@ class TinyGenerator():
         #     self.tinyCode = self.tinyCode + "\nend"
         
         self.tinyCode = re.sub(r'link.*\n', "link {0}\n".format(str(self.numLocalParams + self.numTempParams)), self.tinyCode)
+        self.removeUnnecessaryMoves()
         return self.tinyCode
 
 
-    # def printRegs(self):
-    #     for register in self.Registers:
-    #         if register
+    def removeUnnecessaryMoves(self):
+        tinyCodeArray = self.tinyCode.strip().rstrip('\n').split('\n')
+        linesToRemove = []
+        for tinyLine in tinyCodeArray:
+            tinyLine = tinyLine.strip()
+            if tinyLine == "":
+                continue
+            tinyLineSplit = tinyLine.split()
+            if tinyLineSplit[0] != "move":
+                continue
+            if tinyLineSplit[1] == tinyLineSplit[2]:
+                linesToRemove.append(tinyLine)
+
+        for lineToRemove in linesToRemove:
+            tinyCodeArray.remove(lineToRemove)
+
+        self.tinyCode = "\n".join(tinyCodeArray)
+        return
+
+
+    def printRegs(self):
+        strToPrint = ""
+        for register in self.Registers:
+            strToPrint += " r{0} -> ".format(register.regNum)    
+            if register.valid:
+                strToPrint += register.variable
+            else:
+                strToPrint += "null"
+        print(";", strToPrint)
+
+        return
+
 
     def convertIRVarToTinyVar(self, IRVar):
         tinyVar = ""
@@ -149,6 +181,7 @@ class TinyGenerator():
         tinyVar = self.convertIRVarToTinyVar(variable)
         if variable in self.tempsSpilledDict.keys():
             tinyVar = self.tempsSpilledDict[variable]
+            del self.tempsSpilledDict[variable]
         self.tinyCode += "move {0} {1}\n".format(tinyVar, register)
         return register
 
@@ -157,7 +190,7 @@ class TinyGenerator():
 
 
     def spillRegister(self, register):
-        regNum = register[1]
+        regNum = int(register[1])
         tinyVar = self.convertIRVarToTinyVar(self.Registers[regNum].variable)
 
         if self.Registers[regNum].variable.startswith("$T"):  
@@ -181,6 +214,7 @@ class TinyGenerator():
 
     def freeRegister(self, register):
         regNum = int(register[1])
+        print("; freeing {0} with {1}, valid: {2}, dirty: {3}".format(register, self.Registers[regNum].variable, self.Registers[regNum].valid, self.Registers[regNum].dirty))
         if self.Registers[regNum].valid and self.Registers[regNum].dirty and self.checkVariableLive(self.Registers[regNum].variable):
             self.spillRegister(register)
         self.Registers[regNum].valid = 0
@@ -190,18 +224,8 @@ class TinyGenerator():
 
     def chooseRegToFree(self, doneWithLine):
         regsToUse = [0,1,2,3]
-        for register in self.Registers:
-            if register.dirty:
-                regsToUse.remove(register.regNum)
-
-        if len(regsToUse) == 1:
-            return regsToUse[0]
-
-        if len(regsToUse) == 0:
-            regsToUse = [0,1,2,3]
-
+        regsToRemove = []
         if not doneWithLine:
-            regsToRemove = []
             for regNum in regsToUse:
                 if self.Registers[regNum].valid and self.Registers[regNum].variable in self.functCFG.CFGNodeList[self.lineNum].genList:
                     regsToRemove.append(regNum)
@@ -211,13 +235,31 @@ class TinyGenerator():
             if len(regsToUse) == 1:
                 return regsToUse[0]
 
-            if len(regsToUse) == 0:
-                regsToUse = [0,1,2,3]
-                for regNum in regsToRemove:
-                    regsToUse.remove(regNum)
+            # if len(regsToUse) == 0:
+            #     regsToUse = [0,1,2,3]
+            #     for regNum in regsToRemove:
+            #         regsToUse.remove(regNum)
+
+        tempRegsToRemove = []
+        for regNum in regsToUse:
+            if self.Registers[regNum].dirty:
+                tempRegsToRemove.append(regNum)
+
+        for regNum in tempRegsToRemove:
+            regsToUse.remove(regNum)
+
+        if len(regsToUse) == 1:
+            return regsToUse[0]
+
+        if len(regsToUse) == 0:
+            regsToUse = [0,1,2,3]
+            for regNum in regsToRemove:
+                regsToUse.remove(regNum)
+
 
         lineToCheck = self.lineNum + 1
         while True:
+            print(";", regsToUse)
             if lineToCheck == (self.totalLineNum - 1):
                 return regsToUse[0]
             if lineToCheck in self.functCFG.leaders:
@@ -240,11 +282,13 @@ class TinyGenerator():
         return regNum
 
     def registerAllocate(self, varName, doneWithLine):
+        print("; starting allocation of {0}".format(varName))
         for register in self.Registers:
             if not register.valid: 
                 register.valid = 1
                 register.dirty = 0
                 register.variable = varName
+                print("; allocating {0} to r{1}".format(varName, register.regNum))
                 return "r{0}".format(register.regNum)
                 # foundReg = 1
                 # regToUse = register.regNum
@@ -253,12 +297,13 @@ class TinyGenerator():
         self.Registers[regNum].valid = 1
         self.Registers[regNum].dirty = 0
         self.Registers[regNum].variable = varName
+        print("; allocating {0} to r{1}".format(varName, regNum))
         return "r{0}".format(regNum)
 
     def freeRegistersIfDead(self, regsToTryFree):
         for regToTryFree in regsToTryFree:
-            if not self.checkVariableLive(self.Registers[int(regToTryFree[1])].variable):
-                print("; freeing {0} with {1} -> {2}".format(regToTryFree, self.Registers[int(regToTryFree[1])].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
+            if (not self.checkVariableLive(self.Registers[int(regToTryFree[1])].variable)) or (self.Registers[int(regToTryFree[1])].variable in self.functCFG.CFGNodeList[self.lineNum].killList):
+                print("; freeing cause dead {0} with {1} -> {2}".format(regToTryFree, self.Registers[int(regToTryFree[1])].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
                 self.Registers[int(regToTryFree[1])].valid = 0
                 self.Registers[int(regToTryFree[1])].dirty = 0
 
@@ -276,40 +321,41 @@ class TinyGenerator():
 
         if op1.replace(".", "").replace("-", "").isdigit():
             opmrl_op1 = op1
-        elif not op1.startswith("$"):
-            opmrl_op1 = op1
-            self.declDict[opmrl_op1] = ""
-        elif op1.startswith("$L"):
-            opmrl_op1 = op1.replace("L", "-")
-        elif op1.startswith("$P"):
-            opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
-        elif op1.startswith("$R"):
-            opmrl_op1 = "$" + str(6 + self.parameters)
+        # elif not op1.startswith("$"):
+        #     opmrl_op1 = op1
+        #     self.declDict[opmrl_op1] = ""
+        # elif op1.startswith("$L"):
+        #     opmrl_op1 = op1.replace("L", "-")
+        # elif op1.startswith("$P"):
+        #     opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+        # elif op1.startswith("$R"):
+        #     opmrl_op1 = "$" + str(6 + self.parameters)
         else:
-            opAllocated = self.registerAllocate(op1)
-            opmrl_op1 = "r{0}".format(self.regDict[op1])
+            # opAllocated = self.registerAllocate(op1)
+            # opmrl_op1 = "r{0}".format(self.regDict[op1])
+            opmrl_op1 = self.ensureRegister(op1)
 
-        self.registerAllocate(op1)
-        reg_op2 = "r{0}".format(self.regDict[op1])
+        # self.registerAllocate(op1)
+        # reg_op2 = "r{0}".format(self.regDict[op1])
 
         # if opmrl_op1 in self.writeVals.keys():
         #     reg_op2 = "r{0}".format(self.writeVals[opmrl_op1])
         #     self.regDict[result] = self.writeVals[opmrl_op1]
         #     self.writeVals.pop(opmrl_op1)
         # else:
-        self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
+        # self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
 
-        return reg_op2, opmrl_op1
+        return reg_op2
 
     def inci(self, IRLine):
         lineSplit = IRLine.split(" ")
         op1 = lineSplit[1]
         code = []
 
-        reg_op2, opmrl_op1 = self.incDecOperandSetup(op1)
+        reg_op2 = self.incDecOperandSetup(op1)
         code.append("inci {0}".format(reg_op2))
-        if not opmrl_op1.startswith("r"):
-            code.append("move {0} {1}".format(reg_op2, opmrl_op1))
+        # if not opmrl_op1.startswith("r"):
+        #     code.append("move {0} {1}".format(reg_op2, opmrl_op1))
         self.tinyCode += "\n".join(code) + "\n"
         return
 
@@ -374,7 +420,7 @@ class TinyGenerator():
         if isReg2:
             regsToTryFree.append(opmrl_op2)
 
-        reg_op2 = self.registerAllocate(result, 0)
+        reg_op2 = self.registerAllocate(result, doneWithLine=0)
         self.Registers[int(reg_op2[1])].dirty = 1
         self.freeRegistersIfDead(regsToTryFree)
         # self.registerAllocate(result)
@@ -409,6 +455,7 @@ class TinyGenerator():
         #     self.regDict[result] = self.writeVals[opmrl_op1]
         #     self.writeVals.pop(opmrl_op1)
         # else:
+        print("; opmrl_op1 = {0}, opmrl_op2 = {1}, reg_op2 = {2}".format(opmrl_op1, opmrl_op2, reg_op2))
         self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
 
@@ -579,6 +626,7 @@ class TinyGenerator():
             # opmr_op2 = "r{0}".format(self.regDict[result])
 
         opmr_op2 = self.registerAllocate(result, 1)
+        self.Registers[int(opmr_op2[1])].dirty = 1
 
         # print("{0}: {1}".format(opmrl_op1, opmr_op2))
         # print(IRLine)
@@ -773,7 +821,7 @@ class TinyGenerator():
             #     opmr_op2 = "r" + str(self.writeVals[op2])
             # else:
             opmr_op2 = self.temporaryAllocate()
-            code.append("move {0} {1}".format(op2, opmr_op2s)) 
+            code.append("move {0} {1}".format(op2, opmr_op2)) 
                 # self.writeVals[op2] = self.regDict[regVar] 
         # elif not op2.startswith("$"):
         #     opmr_op2 = op2
@@ -788,6 +836,7 @@ class TinyGenerator():
             # self.registerAllocate(op2)
             opmr_op2 = self.ensureRegister(op2, 0)
 
+        self.freeRegistersIfDead([opmr_op2])
         return opmr_op2
 
 
