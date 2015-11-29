@@ -27,6 +27,7 @@ class TinyGenerator():
         self.numTempParams = 0
         self.tempsSpilledDict = {} # Saves mapping of temp to stack in case of spilling
         self.stringInit = stringInit # If this code generation is just for the string initialization
+        self.globalVariables = globalVariables
 
         # Add 4 registers
         self.Registers = []
@@ -133,6 +134,13 @@ class TinyGenerator():
         for regNum in range(4):
             if self.Registers[regNum].valid:
                 self.freeRegister("r{0}".format(regNum), keepTemporaries=1)
+
+    def saveGlobalVariablesBack(self):
+        print("; storing globalVariables back")
+        for regNum in range(4):
+            if self.Registers[regNum].valid and self.Registers[regNum].variable in self.globalVariables:
+                self.freeRegister("r{0}".format(regNum))
+
 
     def removeUnnecessaryMoves(self):
         # print(self.tinyCode)
@@ -1028,6 +1036,7 @@ class TinyGenerator():
 
     def ret(self, IRLine):
         code = []
+        self.saveGlobalVariablesBack()
         code.append("unlnk")
         code.append("ret")
         self.tinyCode += "\n".join(code) + "\n"
