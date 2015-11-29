@@ -109,12 +109,15 @@ class TinyGenerator():
             #print(line)
             if not self.stringInit:
                 if self.lineNum in self.functCFG.leaders:
-                    self.resetRegisters()
+                    self.resetRegisters(keepValid=1)
             # Get the function from switcher dictionary
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
             print(";", line)
             func(line)
+            if not self.stringInit:
+                if self.lineNum in self.functCFG.leaders:
+                    self.invalidateAllRegisters()
             self.lineNum += 1
             self.printRegs()
         # print(self.regVals)
@@ -129,11 +132,20 @@ class TinyGenerator():
         return self.tinyCode
 
 
-    def resetRegisters(self):
+    def resetRegisters(self, keepValid=0):
         print("; resetting reg allocation")
+        registersFreed = []
         for regNum in range(4):
             if self.Registers[regNum].valid:
                 self.freeRegister("r{0}".format(regNum), keepTemporaries=1)
+                registersFreed.append("r{0}".format(regNum))
+                if keepValid:
+                    self.Registers[regNum].valid = 1
+        return registersFreed
+
+    def invalidateAllRegisters(self):
+        for regNum in range(4):
+            self.Registers[regNum].valid = 0
 
     def saveGlobalVariablesBack(self):
         print("; storing globalVariables back")
