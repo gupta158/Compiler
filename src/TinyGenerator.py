@@ -648,11 +648,14 @@ class TinyGenerator():
         # else:
             # self.registerAllocate(result)
             # opmr_op2 = "r{0}".format(self.regDict[result])
-
         self.freeRegistersIfDead(regsToTryFree)
-        opmr_op2 = self.registerAllocate(result, 1)
-        # self.Registers[int(opmr_op2[1])].dirty = 1
-        self.markRegisterDirty(opmr_op2)
+        if result.startswith("$R"):
+            isMem2 = True
+            opmr_op2 = "$" + str(6 + self.parameters)
+        else:
+            opmr_op2 = self.registerAllocate(result, 1)
+            # self.Registers[int(opmr_op2[1])].dirty = 1
+            self.markRegisterDirty(opmr_op2)
 
         # print("{0}: {1}".format(opmrl_op1, opmr_op2))
         # print(IRLine)
