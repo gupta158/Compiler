@@ -324,9 +324,9 @@ class TinyGenerator():
         print("; allocating {0} to r{1}".format(varName, regNum))
         return "r{0}".format(regNum)
 
-    def freeRegistersIfDead(self, variablesToTryFree):
+    def freeRegistersIfDead(self, variablesToTryFree, keepVariablesLive=[]):
         for regNum in range(4):
-            if self.Registers[regNum].valid and self.Registers[regNum].variable in variablesToTryFree:
+            if self.Registers[regNum].valid and self.Registers[regNum].variable in variablesToTryFree and self.Registers[regNum].variable not in keepVariablesLive:
                 if (not self.checkVariableLive(self.Registers[regNum].variable)) or (self.Registers[regNum].variable in self.functCFG.CFGNodeList[self.lineNum].killList):
                     print("; freeing cause dead r{0} with {1} -> {2}".format(regNum, self.Registers[regNum].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
                     self.Registers[regNum].valid = 0
@@ -453,6 +453,7 @@ class TinyGenerator():
         if isReg2:
             regsToTryFree.append(op2)
 
+        self.freeRegistersIfDead(regsToTryFree, keepVariablesLive=[op2])
         reg_op2 = self.registerAllocate(result, doneWithLine=0)
         self.markRegisterDirty(reg_op2)
         self.freeRegistersIfDead(regsToTryFree)
