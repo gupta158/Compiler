@@ -707,17 +707,17 @@ class COMPOP(Enum):
 
     def inverseTinyOP(op):
         if op == COMPOP.LT:
-            return COMPOP.GE
+            return COMPOP.GT
         elif op == COMPOP.GT:
-            return COMPOP.LE
+            return COMPOP.LT
         elif op == COMPOP.EQ:
             return COMPOP.EQ
         elif op == COMPOP.NE:
             return COMPOP.NE
         elif op == COMPOP.LE:
-            return COMPOP.GT
+            return COMPOP.GE
         elif op == COMPOP.GE:
-            return COMPOP.LT
+            return COMPOP.LE
         pass
 
 
