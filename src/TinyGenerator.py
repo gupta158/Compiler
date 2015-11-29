@@ -316,16 +316,18 @@ class TinyGenerator():
         print("; allocating {0} to r{1}".format(varName, regNum))
         return "r{0}".format(regNum)
 
-    def freeRegistersIfDead(self, regsToTryFree):
-        for regToTryFree in regsToTryFree:
-            if (not self.checkVariableLive(self.Registers[int(regToTryFree[1])].variable)) or (self.Registers[int(regToTryFree[1])].variable in self.functCFG.CFGNodeList[self.lineNum].killList):
-                print("; freeing cause dead {0} with {1} -> {2}".format(regToTryFree, self.Registers[int(regToTryFree[1])].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
-                self.Registers[int(regToTryFree[1])].valid = 0
-                self.Registers[int(regToTryFree[1])].dirty = 0
+    def freeRegistersIfDead(self, variablesToTryFree):
+        for regNum in range(4):
+            if self.Registers[regNum].valid and self.Registers[regNum].variable in variablesToTryFree:
+                if (not self.checkVariableLive(self.Registers[regNum].variable)) or (self.Registers[regNum].variable in self.functCFG.CFGNodeList[self.lineNum].killList):
+                    print("; freeing cause dead r{0} with {1} -> {2}".format(regNum, self.Registers[regNum].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
+                    self.Registers[regNum].valid = 0
+                    self.Registers[regNum].dirty = 0
 
 
     def temporaryAllocate(self):
             tempName = "&{}".format(self.tempNum)
+            self.functCFG.CFGNodeList[self.lineNum].genList.append(tempName)
             self.tempNum += 1
             return self.registerAllocate(tempName)
 
@@ -333,6 +335,7 @@ class TinyGenerator():
         opmrl_op1 = ""
         opmrl_op2 = ""
         reg_op2   = ""
+        isReg1    = False
         op1Allocated = False
 
         if op1.replace(".", "").replace("-", "").isdigit():
@@ -350,6 +353,7 @@ class TinyGenerator():
             # opAllocated = self.registerAllocate(op1)
             # opmrl_op1 = "r{0}".format(self.regDict[op1])
             opmrl_op1 = self.ensureRegister(op1, 0)
+            isReg1 = True
 
         # self.registerAllocate(op1)
         # reg_op2 = "r{0}".format(self.regDict[op1])
@@ -361,6 +365,11 @@ class TinyGenerator():
         # else:
         # self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
 
+        regsToTryFree = []
+        if isReg1:
+            regsToTryFree.append(op1)
+
+        self.freeRegistersIfDead(regsToTryFree)
         return reg_op2
 
     def inci(self, IRLine):
@@ -432,9 +441,9 @@ class TinyGenerator():
 
         regsToTryFree = []
         if isReg1:
-            regsToTryFree.append(opmrl_op1)
+            regsToTryFree.append(op1)
         if isReg2:
-            regsToTryFree.append(opmrl_op2)
+            regsToTryFree.append(op2)
 
         reg_op2 = self.registerAllocate(result, doneWithLine=0)
         self.markRegisterDirty(reg_op2)
@@ -616,11 +625,10 @@ class TinyGenerator():
 
         regsToTryFree = []
         if isReg1:
-            regsToTryFree.append(opmrl_op1)
+            regsToTryFree.append(op1)
         # if isReg2:
         #     regsToTryFree.append(opmrl_op2)
 
-        self.freeRegistersIfDead(regsToTryFree)
         # reg_op2 = self.registerAllocate(result, 1)
         # self.Registers[int(reg_op2[1])].dirty = 1
 
@@ -641,6 +649,7 @@ class TinyGenerator():
             # self.registerAllocate(result)
             # opmr_op2 = "r{0}".format(self.regDict[result])
 
+        self.freeRegistersIfDead(regsToTryFree)
         opmr_op2 = self.registerAllocate(result, 1)
         # self.Registers[int(opmr_op2[1])].dirty = 1
         self.markRegisterDirty(opmr_op2)
@@ -654,6 +663,7 @@ class TinyGenerator():
         #     code.append("move {0} r{1}".format(opmrl_op1, self.regDict[tempName])) 
         #     opmrl_op1 = "r{0}".format(self.regDict[tempName])
 
+        print("; move {0} {1}".format(opmrl_op1, opmr_op2))
         code.append("move {0} {1}".format(opmrl_op1, opmr_op2)) 
         self.tinyCode += "\n".join(code) + "\n"
         return
@@ -726,9 +736,9 @@ class TinyGenerator():
 
         regsToTryFree = []
         if isReg1:
-            regsToTryFree.append(opmrl_op1)
+            regsToTryFree.append(op1)
         if isReg2:
-            regsToTryFree.append(opmrl_op2)
+            regsToTryFree.append(op2)
 
         self.freeRegistersIfDead(regsToTryFree)
 
@@ -878,7 +888,7 @@ class TinyGenerator():
             # self.registerAllocate(op2)
             opmr_op2 = self.ensureRegister(op2, 0)
 
-        self.freeRegistersIfDead([opmr_op2])
+        self.freeRegistersIfDead([op2])
         return opmr_op2
 
 
@@ -956,45 +966,57 @@ class TinyGenerator():
         self.tinyCode += "\n".join(code) + "\n"
 
     def push(self, IRLine):
-        lineSplit = IRLine.split(" ")
+        lineSplit = IRLine.rstrip().split(" ")
         code = []
+        value = ""
+        isReg1 = False
         if len(lineSplit) == 2:
             op1 = lineSplit[1]
             if op1.replace(".", "").replace("-", "").isdigit():
                 value = op1
-            elif not op1.startswith("$"):
-                value = op1         
-            elif op1.startswith("$L"):
-                value = op1.replace("L", "-")
-            elif op1.startswith("$P"):
-                value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
-            elif op1.startswith("$R"):
-                value = "$" + str(6 + self.parameters)
+            # elif not op1.startswith("$"):
+            #     value = op1         
+            # elif op1.startswith("$L"):
+            #     value = op1.replace("L", "-")
+            # elif op1.startswith("$P"):
+            #     value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+            # elif op1.startswith("$R"):
+            #     value = "$" + str(6 + self.parameters)
             else:
-                self.registerAllocate(op1)
-                value = "r{0}".format(self.regDict[op1])
+                value = self.ensureRegister(op1)
+                isReg1 = True
+
+            if isReg1:
+                self.freeRegistersIfDead([op1])
+                # self.registerAllocate(op1)
+                # value = "r{0}".format(self.regDict[op1])
             code.append("push {0}".format(value))
         else:
             code.append("push")
 
+
         self.tinyCode += "\n".join(code) + "\n"
 
     def pop(self, IRLine):
-        lineSplit = IRLine.split(" ")
+        lineSplit = IRLine.rstrip().split(" ")
         code = []
         if len(lineSplit) == 2:
             op1 = lineSplit[1]
-            if not op1.startswith("$"):
-                value = op1            
-            elif op1.startswith("$L"):
-                value = op1.replace("L", "-")
-            elif op1.startswith("$P"):
-                value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
-            elif op1.startswith("$R"):
-                value = "$" + str(6 + self.parameters)
-            else:
-                self.registerAllocate(op1)
-                value = "r{0}".format(self.regDict[op1])
+            # if not op1.startswith("$"):
+            #     value = op1            
+            # elif op1.startswith("$L"):
+            #     value = op1.replace("L", "-")
+            # elif op1.startswith("$P"):
+            #     value = "$" + str(-int(op1[2:]) + 6 + self.parameters)
+            # elif op1.startswith("$R"):
+            #     value = "$" + str(6 + self.parameters)
+            # else:
+                # self.registerAllocate(op1)
+                # value = "r{0}".format(self.regDict[op1])
+            # if op1.startswith("$T"):
+            #     value = self.temporaryAllocate()
+            # else:
+            value = self.registerAllocate(op1)
             code.append("pop {0}".format(value))
         else:
             code.append("pop")
