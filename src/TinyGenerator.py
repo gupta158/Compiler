@@ -961,6 +961,7 @@ class TinyGenerator():
         lineSplit = IRLine.split(" ")
         label = lineSplit[1]
         code = []
+        self.saveGlobalVariablesBack()
 
         code.append("push r0")
         code.append("push r1")
