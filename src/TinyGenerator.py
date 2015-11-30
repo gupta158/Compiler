@@ -109,7 +109,7 @@ class TinyGenerator():
             #print(line)
             if not self.stringInit:
                 if self.lineNum in self.functCFG.leaders:
-                    self.resetRegisters()
+                    self.resetRegisters(keepValid=1)
             # Get the function from switcher dictionary
             func = switcher.get(line.split(" ")[0], self.errorFunct)
             # Execute the function
@@ -317,19 +317,23 @@ class TinyGenerator():
         self.freeRegister("r{0}".format(regNum))
         return regNum
 
-    def registerAllocate(self, varName, doneWithLine=0):
+    def registerAllocate(self, varName, doneWithLine=0, registersToUse=[]):
         print("; starting allocation of {0}".format(varName))
-        for register in self.Registers:
-            if not register.valid: 
-                register.valid = 1
-                register.dirty = 0
-                register.variable = varName
-                print("; allocating {0} to r{1}".format(varName, register.regNum))
-                return "r{0}".format(register.regNum)
-                # foundReg = 1
-                # regToUse = register.regNum
+        regNum = 0
+        if len(registersToUse) != 0:
+            regNum = int(registersToUse[0][1])
+        else:
+            for register in self.Registers:
+                if not register.valid: 
+                    register.valid = 1
+                    register.dirty = 0
+                    register.variable = varName
+                    print("; allocating {0} to r{1}".format(varName, register.regNum))
+                    return "r{0}".format(register.regNum)
+                    # foundReg = 1
+                    # regToUse = register.regNum
 
-        regNum = self.chooseAndFreeRegister(doneWithLine)
+            regNum = self.chooseAndFreeRegister(doneWithLine)
         self.Registers[regNum].valid = 1
         self.Registers[regNum].dirty = 0
         self.Registers[regNum].variable = varName
@@ -337,12 +341,16 @@ class TinyGenerator():
         return "r{0}".format(regNum)
 
     def freeRegistersIfDead(self, variablesToTryFree, keepVariablesLive=[]):
+        registersFreed = []
         for regNum in range(4):
             if self.Registers[regNum].valid and self.Registers[regNum].variable in variablesToTryFree and self.Registers[regNum].variable not in keepVariablesLive:
                 if (not self.checkVariableLive(self.Registers[regNum].variable)) or (self.Registers[regNum].variable in self.functCFG.CFGNodeList[self.lineNum].killList):
                     print("; freeing cause dead r{0} with {1} -> {2}".format(regNum, self.Registers[regNum].variable, self.functCFG.CFGNodeList[self.lineNum].outList))
                     self.Registers[regNum].valid = 0
                     self.Registers[regNum].dirty = 0
+                    registersFreed.append("r{0}".format(regNum))
+
+        return registersFreed
 
 
     def temporaryAllocate(self):
@@ -465,8 +473,8 @@ class TinyGenerator():
         if isReg2:
             regsToTryFree.append(op2)
 
-        self.freeRegistersIfDead(regsToTryFree, keepVariablesLive=[op2])
-        reg_op2 = self.registerAllocate(result, doneWithLine=0)
+        registersFreed = self.freeRegistersIfDead(regsToTryFree, keepVariablesLive=[op2])
+        reg_op2 = self.registerAllocate(result, doneWithLine=0, registersToUse=registersFreed)
         self.markRegisterDirty(reg_op2)
         self.freeRegistersIfDead(regsToTryFree)
         # self.registerAllocate(result)
