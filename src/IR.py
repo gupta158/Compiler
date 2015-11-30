@@ -50,4 +50,4 @@ class OpDefinitions():
     comparisonOps = ["GEI", "GEF", "LEI", "LEF", "LTI", "LTF", "GTI", "GTF", "EQI", "EQF", "NEI", "NEF"]
     unconditionalJumpOps = ["JUMP", "JSR"]    
     mathIntOps   = ["ADDI", "SUBI", "MULTI", "DIVI"]
-    mathFloatOps = ["ADDD", "SUBF", "MULTF", "DIVF"]
+    mathFloatOps = ["ADDF", "SUBF", "MULTF", "DIVF"]
