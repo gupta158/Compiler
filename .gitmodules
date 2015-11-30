@@ -1,0 +1,3 @@
+[submodule "CompilerTesting"]
+	path = CompilerTesting
+	url = git@github.com:gupta158/CompilerTesting.git
