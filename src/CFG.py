@@ -78,7 +78,7 @@ class CFG():
                     if not cfgNode.lineSplit[1].replace(".", "").replace("-", "").isdigit():
                         cfgNode.genList.append(cfgNode.lineSplit[1])
 
-            elif cfgNode.op in ["READ", "POP"]:
+            elif cfgNode.op in ["READI","READF","POP"]:
                 if len(cfgNode.lineSplit) == 2:
                     cfgNode.killList.append(cfgNode.lineSplit[1])
 
@@ -178,11 +178,11 @@ class CFG():
 
     def printGraph(self):
         for cfgNode in self.CFGNodeList:
-            print("Node {0}, stmt = {1} , predecessors = {2} , successors = {3}  ".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
-        print("leaders")
-        print(self.leaders)
-        print("labelsLineNum")
-        print(self.labelsLineNum)
+            print(";Node {0}, stmt = {1} , predecessors = {2} , successors = {3}  ".format(cfgNode.lineNum, cfgNode.line, str(cfgNode.predecessors), str(cfgNode.successors)))
+        print(";leaders")
+        print(";", self.leaders)
+        print(";labelsLineNum")
+        print(";", self.labelsLineNum)
         return              
 
 
