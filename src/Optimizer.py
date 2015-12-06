@@ -70,62 +70,47 @@ class Optimizer():
 
     def substituteIncDec(self, IRLines):
         newIRLines    = []
-        store1Line    = False
         storeLineTemp = -1
         subLine       = False
         addLine       = False
         opLineVar     = -1
         opLineTemp    = -1
 
-        # ;STOREI 1 $T5
-        # ;SUBI i $T5 $T6
+        # ;SUBI i 1 $T6
         # ;STOREI $T6 i
         for IRLine in IRLines:
             lineIsFinalStore = (IRLine.op == "STOREI") and (IRLine.lineSplit[1] == opLineTemp) and (IRLine.lineSplit[2] == opLineVar)
-            if store1Line and addLine and lineIsFinalStore:
-                newIRLines.pop()
+            if addLine and lineIsFinalStore:
                 newIRLines.pop()
                 newIRLines.append(IRLineObject("INCI {0}".format(IRLine.lineSplit[2])))
+                subLine    = False
+                addLine    = False
                 continue
 
-            elif store1Line and subLine and lineIsFinalStore:
-                newIRLines.pop()
+            elif subLine and lineIsFinalStore:
                 newIRLines.pop()
                 newIRLines.append(IRLineObject("DECI {0}".format(IRLine.lineSplit[2])))
+                subLine    = False
+                addLine    = False
                 continue
 
 
             if IRLine.op == "ADDI":
-                if store1Line:
-                    if IRLine.lineSplit[2] == storeLineTemp:
-                        opLineVar = IRLine.lineSplit[1]
-                        opLineTemp = IRLine.lineSplit[3]
-                        addLine = True
-                    else:
-                        store1Line = False
+                if IRLine.lineSplit[2] == "1" and IRLine.lineSplit[3].startswith("$T"):
+                    opLineVar = IRLine.lineSplit[1]
+                    opLineTemp = IRLine.lineSplit[3]
+                    addLine = True
 
             elif IRLine.op == "SUBI":
-                if store1Line:
-                    if IRLine.lineSplit[2] == storeLineTemp:
-                        opLineVar = IRLine.lineSplit[1]
-                        opLineTemp = IRLine.lineSplit[3]
-                        subLine = True
-                    else:
-                        store1Line = False
-            elif IRLine.op == "STOREI" and IRLine.lineSplit[1] == "1":
-                store1Line = True
-                storeLineTemp = IRLine.lineSplit[2]
-
+                if IRLine.lineSplit[2] == "1" and IRLine.lineSplit[3].startswith("$T"):
+                    opLineVar = IRLine.lineSplit[1]
+                    opLineTemp = IRLine.lineSplit[3]
+                    subLine = True
             else:
-                store1Line = False
                 subLine    = False
                 addLine    = False
 
             newIRLines.append(IRLine)
-
-
-
-
         return newIRLines
 
 

@@ -100,6 +100,8 @@ class CFG():
                     cfgNode.genList.append(cfgNode.lineSplit[1])
                 cfgNode.killList.append(cfgNode.lineSplit[2])
 
+            elif cfgNode.op in ["INCI", "DECI"]:
+                cfgNode.genList.append(cfgNode.lineSplit[1])
 
         changed = True
         nextWorklist = range(len(self.CFGNodeList)-1, -1, -1)

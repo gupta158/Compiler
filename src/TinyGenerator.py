@@ -239,6 +239,7 @@ class TinyGenerator():
 
                 tinyVar = "$-{0}".format(tempStackVar)
                 self.tempsSpilledDict[self.Registers[regNum].variable] = tinyVar
+                print("; spilling temp ",self.Registers[regNum].variable)
                 break
 
         print("; spilling {0} to {1}".format(register, tinyVar))
@@ -366,8 +367,8 @@ class TinyGenerator():
         isReg1    = False
         op1Allocated = False
 
-        if op1.replace(".", "").replace("-", "").isdigit():
-            opmrl_op1 = op1
+        # if op1.replace(".", "").replace("-", "").isdigit():
+        #     opmrl_op1 = op1
         # elif not op1.startswith("$"):
         #     opmrl_op1 = op1
         #     self.declDict[opmrl_op1] = ""
@@ -377,11 +378,11 @@ class TinyGenerator():
         #     opmrl_op1 = "$" + str(-int(op1[2:]) + 6 + self.parameters)
         # elif op1.startswith("$R"):
         #     opmrl_op1 = "$" + str(6 + self.parameters)
-        else:
+        # else:
             # opAllocated = self.registerAllocate(op1)
             # opmrl_op1 = "r{0}".format(self.regDict[op1])
-            opmrl_op1 = self.ensureRegister(op1, 0)
-            isReg1 = True
+        reg_op2 = self.ensureRegister(op1, 0)
+        self.markRegisterDirty(reg_op2)
 
         # self.registerAllocate(op1)
         # reg_op2 = "r{0}".format(self.regDict[op1])
@@ -392,12 +393,6 @@ class TinyGenerator():
         #     self.writeVals.pop(opmrl_op1)
         # else:
         # self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
-
-        regsToTryFree = []
-        if isReg1:
-            regsToTryFree.append(op1)
-
-        self.freeRegistersIfDead(regsToTryFree)
         return reg_op2
 
     def inci(self, IRLine):
@@ -407,9 +402,13 @@ class TinyGenerator():
 
         reg_op2 = self.incDecOperandSetup(op1)
         code.append("inci {0}".format(reg_op2))
-        # if not opmrl_op1.startswith("r"):
-        #     code.append("move {0} {1}".format(reg_op2, opmrl_op1))
+
         self.tinyCode += "\n".join(code) + "\n"
+
+        regsToTryFree = []
+        regsToTryFree.append(op1)
+
+        self.freeRegistersIfDead(regsToTryFree)
         return
 
     def deci(self, IRLine):
@@ -417,12 +416,15 @@ class TinyGenerator():
         op1 = lineSplit[1]
         code = []
 
-        reg_op2, opmrl_op1 = self.incDecOperandSetup(op1)
+        reg_op2 = self.incDecOperandSetup(op1)
         code.append("deci {0}".format(reg_op2))
-        if not opmrl_op1.startswith("r"):
-            code.append("move {0} {1}".format(reg_op2, opmrl_op1))
+
         self.tinyCode += "\n".join(code) + "\n"
 
+        regsToTryFree = []
+        regsToTryFree.append(op1)
+
+        self.freeRegistersIfDead(regsToTryFree)
         return
 
     def mathOperandSetup(self, op1, op2, result, orderMatters):
