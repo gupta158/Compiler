@@ -7,7 +7,7 @@ from Optimizer import *
 from CFG import *
 
 
-#TODO string GLOBALS and LOCALS
+#TODO: account for function name label1
 # This class defines a complete listener for a parse tree produced by LittleExprParser.
 class SymbolTableGenerator(LittleExprListener):
 

@@ -5,7 +5,7 @@ from AST import *
 from CFG import *
 import re
 
-# This class defines a complete listener for a parse tree produced by LittleExprParser.
+#TODO: account for function name label1
 class TinyGenerator():
 
     def __init__(self, IRcode, globalVariables=None, stringInit=0):
@@ -28,6 +28,8 @@ class TinyGenerator():
         self.tempsSpilledDict = {} # Saves mapping of temp to stack in case of spilling
         self.stringInit = stringInit # If this code generation is just for the string initialization
         self.globalVariables = globalVariables
+        self.stackOffset = 6
+        self.registersToPush = ["r0", "r1", "r2", "r3"]
 
         # Add 4 registers
         self.Registers = []
@@ -47,8 +49,10 @@ class TinyGenerator():
             # self.functCFG.printGraph()
             self.IRcode = self.functCFG.getCode()
 
-
     def generate(self):
+        return self.generateCode()
+
+    def generateCode(self):
         stmtList = self.IRcode.split("\n")
         switcher = {
                 "INCI": self.inci,
@@ -131,6 +135,22 @@ class TinyGenerator():
         self.removeUnnecessaryMoves()
         return self.tinyCode
 
+    def updateStackOffset(self):
+        registersUsed = []
+        for register in self.Registers:
+            print("; Register used at least Once for {0}: {1}".format(register.regNum, str(register.usedAtLeastOnce)))
+            if register.usedAtLeastOnce:
+                registersUsed.append("r{0}".format(register.regNum))
+        self.stackOffset = 2 + len(registersUsed)
+        self.registersToPush = registersUsed
+
+
+    # def countRegsUsed(self):
+    #     tinyCodeArray = self.tinyCode.split("\n")
+    #     regsUsed = []
+    #     for tinyLine in tinyCodeArray:
+    #         tinyLineSplit = tinyLine.split()
+    #         if tinyLineSplit
 
     def resetRegisters(self, keepValid=0):
         print("; resetting reg allocation")
@@ -196,9 +216,9 @@ class TinyGenerator():
         elif IRVar.startswith("$L"):
             tinyVar = IRVar.replace("L", "-")
         elif IRVar.startswith("$P"):
-            tinyVar = "$" + str(-int(IRVar[2:]) + 6 + self.parameters)
+            tinyVar = "$" + str(-int(IRVar[2:]) + self.stackOffset + self.parameters)
         elif IRVar.startswith("$R"):
-            tinyVar = "$" + str(6 + self.parameters)
+            tinyVar = "$" + str(self.stackOffset + self.parameters)
 
         return tinyVar
 
@@ -330,14 +350,17 @@ class TinyGenerator():
                     register.dirty = 0
                     register.variable = varName
                     print("; allocating {0} to r{1}".format(varName, register.regNum))
+                    register.usedAtLeastOnce = True
                     return "r{0}".format(register.regNum)
                     # foundReg = 1
                     # regToUse = register.regNum
 
             regNum = self.chooseAndFreeRegister(doneWithLine)
+
         self.Registers[regNum].valid = 1
         self.Registers[regNum].dirty = 0
         self.Registers[regNum].variable = varName
+        self.Registers[regNum].usedAtLeastOnce = True
         print("; allocating {0} to r{1}".format(varName, regNum))
         return "r{0}".format(regNum)
 
@@ -682,7 +705,7 @@ class TinyGenerator():
         registersFreed = self.freeRegistersIfDead(regsToTryFree)
         if result.startswith("$R"):
             isMem2 = True
-            opmr_op2 = "$" + str(6 + self.parameters)
+            opmr_op2 = "$" + str(self.stackOffset + self.parameters)
         else:
             opmr_op2 = self.registerAllocate(result, 1, registersToUse=registersFreed)
             # self.Registers[int(opmr_op2[1])].dirty = 1
@@ -880,9 +903,9 @@ class TinyGenerator():
         elif op2.startswith("$L"):
             opmr_op2 = op2.replace("L", "-")
         elif op2.startswith("$P"):
-            opmr_op2 = "$" + str(-int(op2[2:]) + 6 + self.parameters)
+            opmr_op2 = "$" + str(-int(op2[2:]) + self.stackOffset + self.parameters)
         elif op2.startswith("$R"):
-            opmr_op2 = "$" + str(6 + self.parameters)
+            opmr_op2 = "$" + str(self.stackOffset + self.parameters)
         else:
             self.registerAllocate(op2)
             opmr_op2 = "r{0}".format(self.regDict[op2])
@@ -1085,5 +1108,5 @@ class RegisterStatus():
         self.valid = 0
         self.variable = ""
         self.regNum = regNum
-
+        self.usedAtLeastOnce = False
 # 31 classes WOAH
