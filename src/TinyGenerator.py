@@ -24,12 +24,13 @@ class TinyGenerator():
         self.functCFG = None
         self.lineNum = 0
         self.totalLineNum = 0
-        self.numLocalParams = 0
         self.numTempParams = 0
         self.tempsSpilledDict = {} # Saves mapping of temp to stack in case of spilling
         self.stringInit = stringInit # If this code generation is just for the string initialization
         self.globalVariables = globalVariables
-        self.stackOffset = 6
+        self.stackOffset = 2
+        self.localVarOffset = 4
+        self.numLocalParams = 0
         self.registersToPush = ["r0", "r1", "r2", "r3"]
 
         # Add 4 registers
@@ -51,7 +52,34 @@ class TinyGenerator():
             self.IRcode = self.functCFG.getCode()
 
     def generate(self):
-        return self.generateCode()
+        oldLocalVarOffset = self.localVarOffset
+        self.generateCode()
+        self.updateLocalVarOffset()
+
+        while oldLocalVarOffset != self.localVarOffset:
+            oldLocalVarOffset = self.localVarOffset
+            print("; RESTARTING EVERYTHING cause varOffset is {0}\n\n\n\n\n".format(self.localVarOffset)) if DEBUG else None
+
+            # Restore defaults for everything
+            self.tinyCode = ""
+            self.declCode = ""
+            self.regNum = 0
+            self.tempNum = 0
+            self.regDict = {}
+            self.declDict = {}
+            self.stringDict = {}
+            self.parameters = 0
+            self.lineNum = 0
+            self.totalLineNum = 0
+            self.numTempParams = 0
+            self.tempsSpilledDict = {} # Saves mapping of temp to stack in case of spilling
+            self.stackOffset = 2
+            self.numLocalParams = 0
+
+            self.generateCode()
+            self.updateLocalVarOffset()
+
+        return self.tinyCode
 
     def generateCode(self):
         stmtList = self.IRcode.split("\n")
@@ -131,17 +159,17 @@ class TinyGenerator():
         # else:
         #     self.tinyCode = self.tinyCode + "\nend"
         
-        self.tinyCode = re.sub(r'link.*\n', "link {0}\n".format(str(self.numLocalParams + self.numTempParams)), self.tinyCode)
+        self.tinyCode = re.sub(r'link.*\n', "link {0}\n".format(str(self.numLocalParams + self.localVarOffset + self.numTempParams)), self.tinyCode)
         self.removeUnnecessaryMoves()
         return self.tinyCode
 
-    def updateStackOffset(self):
+    def updateLocalVarOffset(self):
         registersUsed = []
         for register in self.Registers:
             print("; Register used at least Once for {0}: {1}".format(register.regNum, str(register.usedAtLeastOnce))) if DEBUG else None
             if register.usedAtLeastOnce:
                 registersUsed.append("r{0}".format(register.regNum))
-        self.stackOffset = 2 + len(registersUsed)
+        self.localVarOffset = len(registersUsed)
         self.registersToPush = registersUsed
 
 
@@ -213,7 +241,7 @@ class TinyGenerator():
             tinyVar = IRVar
             self.declDict[tinyVar] = ""
         elif IRVar.startswith("$L"):
-            tinyVar = IRVar.replace("L", "-")
+            tinyVar = "$" + str(int(IRVar.replace("L", "-")[1:]) - self.localVarOffset)
         elif IRVar.startswith("$P"):
             tinyVar = "$" + str(-int(IRVar[2:]) + self.stackOffset + self.parameters)
         elif IRVar.startswith("$R"):
@@ -247,14 +275,14 @@ class TinyGenerator():
             return
 
         if self.Registers[regNum].variable.startswith("$T"):  
-            tempStackVar = self.numLocalParams + 1
+            tempStackVar = self.numLocalParams + self.localVarOffset + 1
             while True:
                 if "$-{0}".format(tempStackVar) in self.tempsSpilledDict.keys():
                     tempStackVar += 1
                     continue
 
-                if (tempStackVar - self.numLocalParams) > self.numTempParams:
-                    self.numTempParams = (tempStackVar - self.numLocalParams)
+                if (tempStackVar - self.numLocalParams - self.localVarOffset) > self.numTempParams:
+                    self.numTempParams = (tempStackVar - self.numLocalParams - self.localVarOffset)
 
                 tinyVar = "$-{0}".format(tempStackVar)
                 self.tempsSpilledDict[self.Registers[regNum].variable] = tinyVar
@@ -707,7 +735,7 @@ class TinyGenerator():
         label = lineSplit[1]
         code = []
 
-        code.append("label {0}".format(label))    
+        code.append("label {0}".format(label))   
         self.tinyCode += "\n".join(code) + "\n"
 
         return
@@ -815,17 +843,17 @@ class TinyGenerator():
         code = []
         self.saveGlobalVariablesBack()
 
-        code.append("push r0")
-        code.append("push r1")
-        code.append("push r2")
-        code.append("push r3")
+        # code.append("push r0")
+        # code.append("push r1")
+        # code.append("push r2")
+        # code.append("push r3")
 
         code.append("jsr {0}".format(label))
 
-        code.append("pop r3")
-        code.append("pop r2")
-        code.append("pop r1")
-        code.append("pop r0")
+        # code.append("pop r3")
+        # code.append("pop r2")
+        # code.append("pop r1")
+        # code.append("pop r0")
 
         self.tinyCode += "\n".join(code) + "\n"
         return
@@ -869,6 +897,8 @@ class TinyGenerator():
     def ret(self, IRLine):
         code = []
         self.saveGlobalVariablesBack()
+        for registerToPush in reversed(self.registersToPush):
+            code.append("pop {0}".format(registerToPush))
         code.append("unlnk")
         code.append("ret")
         self.tinyCode += "\n".join(code) + "\n"
@@ -879,8 +909,11 @@ class TinyGenerator():
         localparam = lineSplit[1]
         code = []
         self.parameters = int(parameters)
-        code.append("link {0}".format(localparam))
         self.numLocalParams = int(localparam)
+        code.append("link {0}".format(str(self.numLocalParams + self.localVarOffset)))
+
+        for registerToPush in self.registersToPush:
+            code.append("push {0}".format(registerToPush))
         self.tinyCode += "\n".join(code) + "\n"
 
     def errorFunct(self, IRLine):
