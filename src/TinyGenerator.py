@@ -9,7 +9,7 @@ DEBUG = 0
 #TODO: account for function name label1
 class TinyGenerator():
 
-    def __init__(self, IRcode, globalVariables=None, stringInit=0):
+    def __init__(self, IRcode, globalVariables=None, stringInit=0, functName=""):
         self.IRcode = IRcode
         self.tinyCode = ""
         self.declCode = ""
@@ -32,6 +32,7 @@ class TinyGenerator():
         self.localVarOffset = 4
         self.numLocalParams = 0
         self.registersToPush = ["r0", "r1", "r2", "r3"]
+        self.functName = functName
 
         # Add 4 registers
         self.Registers = []
@@ -41,7 +42,7 @@ class TinyGenerator():
         self.Registers.append(RegisterStatus(3))
 
         if not stringInit:
-            self.functCFG = CFG(IRcode)
+            self.functCFG = CFG(IRcode, functName=self.functName)
             self.functCFG.populateNodeInfo()
             self.functCFG.removeLinesWithNoPredecessors()
             self.functCFG.runLivenessAnalysis(globalVariables)
@@ -897,8 +898,9 @@ class TinyGenerator():
     def ret(self, IRLine):
         code = []
         self.saveGlobalVariablesBack()
-        for registerToPush in reversed(self.registersToPush):
-            code.append("pop {0}".format(registerToPush))
+        if self.functName != "main":
+            for registerToPush in reversed(self.registersToPush):
+                code.append("pop {0}".format(registerToPush))
         code.append("unlnk")
         code.append("ret")
         self.tinyCode += "\n".join(code) + "\n"
@@ -912,8 +914,10 @@ class TinyGenerator():
         self.numLocalParams = int(localparam)
         code.append("link {0}".format(str(self.numLocalParams + self.localVarOffset)))
 
-        for registerToPush in self.registersToPush:
-            code.append("push {0}".format(registerToPush))
+
+        if self.functName != "main":
+            for registerToPush in self.registersToPush:
+                code.append("push {0}".format(registerToPush))
         self.tinyCode += "\n".join(code) + "\n"
 
     def errorFunct(self, IRLine):

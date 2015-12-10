@@ -56,7 +56,7 @@ class SymbolTableGenerator(LittleExprListener):
             functOptimizer = Optimizer(functCode)
             functCode = functOptimizer.optimize()
 
-            functTinyGen = TinyGenerator(functCode, globalVariables=globalVars)
+            functTinyGen = TinyGenerator(functCode, globalVariables=globalVars, functName=functNode.functName)
             self.allCode += functCode
             tinyCode += functTinyGen.generate()
 

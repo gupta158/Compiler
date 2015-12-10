@@ -2,11 +2,12 @@ from IR import *
 
 class CFG():
 
-    def __init__(self, functCode):
+    def __init__(self, functCode, functName=""):
         self.stmtList = functCode.rstrip('\n').split('\n')
         self.CFGNodeList = []
         self.labelsLineNum = {}
         self.leaders = []
+        self.functName = functName
         for lineNum in range(0, len(self.stmtList)):
             stmt = self.stmtList[lineNum]
             cfgNode = (CFGNode(stmt, lineNum))
@@ -126,7 +127,7 @@ class CFG():
                     # print(cfgNode.outList)
                     # print("END")
 
-                if cfgNode.op == "RET":
+                if cfgNode.op == "RET" and self.functName != "main":
                     cfgNode.outList.extend(globalVariables)
 
                 cfgNode.inList = list(cfgNode.outList)
