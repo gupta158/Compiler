@@ -499,13 +499,13 @@ class SymbolTableGenerator(LittleExprListener):
             return
 
         exprListNode = ASTExprList()
-        exprListNode.Left = None
+        exprListNode.Right = None
 
         if ctx.expr_list_tail() is not None and ctx.expr_list_tail().getText():
-            exprListNode.Left = self.ASTStack.pop()
+            exprListNode.Right = self.ASTStack.pop()
 
         exprNode = self.ASTStack.pop()
-        exprListNode.Right = exprNode
+        exprListNode.Left = exprNode
 
         self.ASTStack.append(exprListNode)
         return
@@ -516,13 +516,13 @@ class SymbolTableGenerator(LittleExprListener):
             return
 
         exprListNode = ASTExprList()
-        exprListNode.Left = None
+        exprListNode.Right = None
 
         if ctx.expr_list_tail() is not None and ctx.expr_list_tail().getText():
-            exprListNode.Left = self.ASTStack.pop()
+            exprListNode.Right = self.ASTStack.pop()
 
         exprNode = self.ASTStack.pop()
-        exprListNode.Right = exprNode
+        exprListNode.Left = exprNode
 
         self.ASTStack.append(exprListNode)
         return

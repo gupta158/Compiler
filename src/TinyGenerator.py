@@ -261,6 +261,7 @@ class TinyGenerator():
         if variable in self.tempsSpilledDict.keys():
             tinyVar = self.tempsSpilledDict[variable]
             del self.tempsSpilledDict[variable]
+        print(";move {0} {1}\n".format(tinyVar, register)) if DEBUG else None
         self.tinyCode += "move {0} {1}\n".format(tinyVar, register)
         return register
 
@@ -278,7 +279,7 @@ class TinyGenerator():
         if self.Registers[regNum].variable.startswith("$T"):  
             tempStackVar = self.numLocalParams + self.localVarOffset + 1
             while True:
-                if "$-{0}".format(tempStackVar) in self.tempsSpilledDict.keys():
+                if "$-{0}".format(tempStackVar) in self.tempsSpilledDict.values():
                     tempStackVar += 1
                     continue
 
@@ -291,6 +292,7 @@ class TinyGenerator():
                 break
 
         print("; spilling {0} to {1}".format(register, tinyVar)) if DEBUG else None
+        print("; move {0} {1}\n".format(register, tinyVar)) if DEBUG else None
         self.tinyCode += "move {0} {1}\n".format(register, tinyVar)
         return
 
@@ -475,13 +477,17 @@ class TinyGenerator():
             regsToTryFree.append(op1)
         if isReg2:
             regsToTryFree.append(op2)
+        print(";", op1, "-->", opmrl_op1) if DEBUG else None
+        print(";", op2, "-->", opmrl_op2) if DEBUG else None
 
         registersFreed = self.freeRegistersIfDead(regsToTryFree, keepVariablesLive=[op2])
         reg_op2 = self.registerAllocate(result, doneWithLine=0, registersToUse=registersFreed)
         self.markRegisterDirty(reg_op2)
         self.freeRegistersIfDead(regsToTryFree)
+        print(";", result, "-->", reg_op2) if DEBUG else None
 
         print("; opmrl_op1 = {0}, opmrl_op2 = {1}, reg_op2 = {2}".format(opmrl_op1, opmrl_op2, reg_op2)) if DEBUG else None
+        print(("; move {0} {1}\n".format(opmrl_op1, reg_op2))) if DEBUG else None
         self.tinyCode += ("move {0} {1}\n".format(opmrl_op1, reg_op2))
         return opmrl_op2, reg_op2
 
@@ -889,6 +895,7 @@ class TinyGenerator():
             op1 = lineSplit[1]
             value = self.registerAllocate(op1)
             code.append("pop {0}".format(value))
+            self.markRegisterDirty(value)
         else:
             code.append("pop")
 

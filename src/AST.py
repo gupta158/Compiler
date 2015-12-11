@@ -568,10 +568,10 @@ class ASTExprList(AST):
 
         if self.Left is not None:
             self.code = self.code + lCode
-            self.paramList.extend(self.Left.paramList)
+            self.paramList.append(self.Left.tempReg)
         if self.Right is not None:
             self.code = self.code + rCode
-            self.paramList.append(self.Right.tempReg)
+            self.paramList.extend(self.Right.paramList)
 
         return self.code
 
@@ -592,6 +592,32 @@ class ASTFunctCall(AST):
     def printNodeInfo(self):
         print("FUNCTCALL, value = {0}, LRType = {1}, type={2} \n".format(self.value, self.LRType, self.nodeType))
 
+
+    def printInOrder(self):
+        print("<node>")
+        self.printNodeInfo()
+        print("</node>")
+
+        if self.ExprListNode is not None:
+            print("<ExprListNode>")
+            self.ExprListNode.printInOrder()
+            print("</ExprListNode>")
+
+        for node in self.PushNodes:
+            if node is not None:
+                print("<PushNodes>")
+                node.printInOrder()
+                print("</PushNodes>")
+
+        for node in self.PopNodes:
+            if node is not None:
+                print("<PushNodes>")
+                node.printInOrder()
+                print("</PushNodes>")
+
+
+        return
+
     def generateCode(self):
         self.nodeType = AST.functReturns[self.functName]
 
@@ -605,7 +631,7 @@ class ASTFunctCall(AST):
         if self.ExprListNode is not None:
             exprListCode = self.ExprListNode.generateCode()
 
-            for param in self.ExprListNode.paramList:
+            for param in reversed(self.ExprListNode.paramList):
                 paramPushNode = ASTPush(param)
                 self.PushNodes.append(paramPushNode)
                 pushCode  = paramPushNode.generateCode() + pushCode
